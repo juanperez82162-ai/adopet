@@ -1,0 +1,25 @@
+# ADOPET - Configuracion de Flyway
+#
+# COPIAR este archivo como "flyway.conf" en esta misma carpeta y ajustar
+# el puerto y la contrasena a los de TU maquina.
+#
+# El archivo "flyway.conf" NO se sube al repositorio: contiene una
+# contrasena real y el repositorio es publico. Solo se sube este ejemplo.
+#
+# Ejecutar los comandos desde la raiz del repositorio:
+#   flyway -configFiles=db/flyway.conf migrate
+#   flyway -configFiles=db/flyway.conf info
+#   flyway -configFiles=db/flyway.conf clean
+
+# Ajustar el puerto al que quedo en esta maquina (1521 por defecto, 1522 si hubo conflicto)
+flyway.url=jdbc:oracle:thin:@//localhost:1522/XEPDB1
+
+flyway.user=adopet
+flyway.password=adopet1234
+
+flyway.locations=filesystem:db/migration
+flyway.schemas=ADOPET
+
+# Permite "flyway clean" mientras el esquema esta en construccion.
+# Cuando arranque la Fase 2 y haya datos reales, cambiar a true.
+flyway.cleanDisabled=false
