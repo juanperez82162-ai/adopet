@@ -1,0 +1,191 @@
+-- =====================================================================
+-- ADOPET — V2: datos base
+-- Politécnico Colombiano Jaime Isaza Cadavid
+-- Juan Sebastián Pérez Morales / Valeria Piedrahita Arbeláez
+--
+-- Migración de Flyway. Solo datos: no crea ni modifica estructura.
+-- Se aplica con:  flyway "-configFiles=db/flyway.conf" migrate
+-- NO se edita una vez aplicada: cualquier cambio va en una migración nueva.
+--
+-- Contenido:
+--   1. Catálogos con ID fijo (estados, etapas y catálogos cerrados)
+--   2. Catálogos de lista abierta (ciudades y razas)
+--   3. Roles y perfiles
+--   4. Módulos del menú
+--   5. Permisos por perfil
+--
+-- Quedan para su fase: SEMAFOROS, PREGUNTAS_CHECKPOINT,
+-- OPCIONES_CHECKPOINT y TIPOS_NOTIFICACION.
+-- =====================================================================
+
+
+-- =====================================================================
+-- 1. CATÁLOGOS CON ID FIJO
+-- =====================================================================
+
+-- Estados de mascota
+INSERT INTO ESTADOS_MASCOTA (ID_ESTADO_MASCOTA, NOMBRE, ES_VISIBLE, ES_ADOPTABLE) VALUES (1, 'DISPONIBLE',     'S', 'S');
+INSERT INTO ESTADOS_MASCOTA (ID_ESTADO_MASCOTA, NOMBRE, ES_VISIBLE, ES_ADOPTABLE) VALUES (2, 'EN_TRATAMIENTO', 'S', 'N');
+INSERT INTO ESTADOS_MASCOTA (ID_ESTADO_MASCOTA, NOMBRE, ES_VISIBLE, ES_ADOPTABLE) VALUES (3, 'EN_PROCESO',     'N', 'N');
+INSERT INTO ESTADOS_MASCOTA (ID_ESTADO_MASCOTA, NOMBRE, ES_VISIBLE, ES_ADOPTABLE) VALUES (4, 'EN_PRUEBA',      'N', 'N');
+INSERT INTO ESTADOS_MASCOTA (ID_ESTADO_MASCOTA, NOMBRE, ES_VISIBLE, ES_ADOPTABLE) VALUES (5, 'ADOPTADA',       'N', 'N');
+
+-- Estados del proceso de adopción
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (1, 'SOLICITUD');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (2, 'ACTIVO');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (3, 'EN_PRUEBA');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (4, 'FINALIZADO');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (5, 'FALLIDO');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (6, 'VENCIDO');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (7, 'CANCELADO_ADOPTANTE');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (8, 'CANCELADO_STAFF');
+INSERT INTO ESTADOS_PROCESO (ID_ESTADO_PROCESO, NOMBRE) VALUES (9, 'CANCELADO_OTROS');
+
+-- Etapas de seguimiento (regla 3-3-3)
+INSERT INTO ETAPAS_SEGUIMIENTO (ID_ETAPA, NOMBRE, DIAS_DESDE_ENTREGA) VALUES (1, 'DIA_3',     3);
+INSERT INTO ETAPAS_SEGUIMIENTO (ID_ETAPA, NOMBRE, DIAS_DESDE_ENTREGA) VALUES (2, 'SEMANA_3', 21);
+INSERT INTO ETAPAS_SEGUIMIENTO (ID_ETAPA, NOMBRE, DIAS_DESDE_ENTREGA) VALUES (3, 'MES_3',    90);
+
+-- Especies
+INSERT INTO ESPECIES (ID_ESPECIE, NOMBRE) VALUES (1, 'PERRO');
+INSERT INTO ESPECIES (ID_ESPECIE, NOMBRE) VALUES (2, 'GATO');
+
+-- Tamaños
+INSERT INTO TAMANIOS (ID_TAMANIO, NOMBRE) VALUES (1, 'PEQUENO');
+INSERT INTO TAMANIOS (ID_TAMANIO, NOMBRE) VALUES (2, 'MEDIANO');
+INSERT INTO TAMANIOS (ID_TAMANIO, NOMBRE) VALUES (3, 'GRANDE');
+
+-- Sexos
+INSERT INTO SEXOS (ID_SEXO, NOMBRE) VALUES (1, 'MACHO');
+INSERT INTO SEXOS (ID_SEXO, NOMBRE) VALUES (2, 'HEMBRA');
+
+-- Niveles de energía
+INSERT INTO NIVELES_ENERGIA (ID_NIVEL_ENERGIA, NOMBRE) VALUES (1, 'BAJO');
+INSERT INTO NIVELES_ENERGIA (ID_NIVEL_ENERGIA, NOMBRE) VALUES (2, 'MEDIO');
+INSERT INTO NIVELES_ENERGIA (ID_NIVEL_ENERGIA, NOMBRE) VALUES (3, 'ALTO');
+
+-- Tipos de documento
+INSERT INTO TIPOS_DOCUMENTO (ID_TIPO_DOCUMENTO, NOMBRE) VALUES (1, 'CC');
+INSERT INTO TIPOS_DOCUMENTO (ID_TIPO_DOCUMENTO, NOMBRE) VALUES (2, 'CE');
+INSERT INTO TIPOS_DOCUMENTO (ID_TIPO_DOCUMENTO, NOMBRE) VALUES (3, 'TI');
+INSERT INTO TIPOS_DOCUMENTO (ID_TIPO_DOCUMENTO, NOMBRE) VALUES (4, 'PASAPORTE');
+
+-- Tipos de vivienda
+INSERT INTO TIPOS_VIVIENDA (ID_TIPO_VIVIENDA, NOMBRE) VALUES (1, 'CASA');
+INSERT INTO TIPOS_VIVIENDA (ID_TIPO_VIVIENDA, NOMBRE) VALUES (2, 'APARTAMENTO');
+
+-- Tiempos disponibles
+INSERT INTO TIEMPOS_DISPONIBLES (ID_TIEMPO_DISPONIBLE, NOMBRE) VALUES (1, 'POCO');
+INSERT INTO TIEMPOS_DISPONIBLES (ID_TIEMPO_DISPONIBLE, NOMBRE) VALUES (2, 'MODERADO');
+INSERT INTO TIEMPOS_DISPONIBLES (ID_TIEMPO_DISPONIBLE, NOMBRE) VALUES (3, 'MUCHO');
+
+
+-- =====================================================================
+-- 2. CATÁLOGOS DE LISTA ABIERTA (IDENTITY)
+-- =====================================================================
+
+-- Ciudades del Valle de Aburrá
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Medellín');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Bello');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Itagüí');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Envigado');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Sabaneta');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('La Estrella');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Caldas');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Copacabana');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Girardota');
+INSERT INTO CIUDADES (NOMBRE) VALUES ('Barbosa');
+
+-- Razas de perro (ID_ESPECIE = 1)
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Mestizo');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Criollo');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Labrador');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Golden Retriever');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Pastor Alemán');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Pitbull');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Beagle');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Poodle');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Bulldog');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Schnauzer');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Chihuahua');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (1, 'Shih Tzu');
+
+-- Razas de gato (ID_ESPECIE = 2)
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Mestizo');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Criollo');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Siamés');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Persa');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Angora');
+INSERT INTO RAZAS (ID_ESPECIE, NOMBRE) VALUES (2, 'Bengalí');
+
+
+-- =====================================================================
+-- 3. ROLES Y PERFILES
+-- Los perfiles se enlazan al rol por nombre, no por ID, porque el ID
+-- lo genera IDENTITY y no se conoce de antemano.
+-- =====================================================================
+
+INSERT INTO ROLES (NOMBRE_ROL) VALUES ('STAFF');
+INSERT INTO ROLES (NOMBRE_ROL) VALUES ('ADOPTANTE');
+
+INSERT INTO PERFILES (ID_ROL, NOMBRE_PERFIL)
+  SELECT ID_ROL, 'Admin'       FROM ROLES WHERE NOMBRE_ROL = 'STAFF';
+INSERT INTO PERFILES (ID_ROL, NOMBRE_PERFIL)
+  SELECT ID_ROL, 'Practicante' FROM ROLES WHERE NOMBRE_ROL = 'STAFF';
+INSERT INTO PERFILES (ID_ROL, NOMBRE_PERFIL)
+  SELECT ID_ROL, 'Adoptante'   FROM ROLES WHERE NOMBRE_ROL = 'ADOPTANTE';
+INSERT INTO PERFILES (ID_ROL, NOMBRE_PERFIL)
+  SELECT ID_ROL, 'Vetado'      FROM ROLES WHERE NOMBRE_ROL = 'ADOPTANTE';
+
+
+-- =====================================================================
+-- 4. MÓDULOS DEL MENÚ
+-- =====================================================================
+
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('INICIO',         'Inicio',         '/inicio',         1);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('MASCOTAS',       'Mascotas',       '/mascotas',       2);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('SOLICITUDES',    'Solicitudes',    '/solicitudes',    3);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('SEGUIMIENTOS',   'Seguimientos',   '/seguimientos',   4);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('NOTIFICACIONES', 'Notificaciones', '/notificaciones', 5);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('MI_PERFIL',      'Mi perfil',      '/mi-perfil',      6);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('USUARIOS',       'Usuarios',       '/usuarios',       7);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('ACCESOS',        'Accesos',        '/accesos',        8);
+INSERT INTO OPCIONES_MENU (NOMBRE_OPCION, ETIQUETA, RUTA, ORDEN) VALUES ('CATALOGOS',      'Catálogos',      '/catalogos',      9);
+
+
+-- =====================================================================
+-- 5. PERMISOS POR PERFIL
+-- La existencia de la fila es el permiso de consulta.
+-- Las columnas dicen qué más puede hacer el perfil dentro del módulo.
+-- El perfil Vetado no tiene filas: su menú sale vacío.
+-- =====================================================================
+
+INSERT INTO PERFILES_OPCIONES (ID_PERFIL, ID_OPCION_MENU, CREAR, MODIFICAR, ELIMINAR)
+SELECT p.ID_PERFIL, o.ID_OPCION_MENU, m.CREAR, m.MODIFICAR, m.ELIMINAR
+FROM (
+            SELECT 'Admin' AS PERFIL, 'INICIO'         AS OPCION, 'N' AS CREAR, 'N' AS MODIFICAR, 'N' AS ELIMINAR FROM DUAL
+  UNION ALL SELECT 'Admin',       'MASCOTAS',       'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'SOLICITUDES',    'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'SEGUIMIENTOS',   'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'NOTIFICACIONES', 'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'MI_PERFIL',      'N', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Admin',       'USUARIOS',       'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'ACCESOS',        'S', 'S', 'S' FROM DUAL
+  UNION ALL SELECT 'Admin',       'CATALOGOS',      'S', 'S', 'S' FROM DUAL
+
+  UNION ALL SELECT 'Practicante', 'INICIO',         'N', 'N', 'N' FROM DUAL
+  UNION ALL SELECT 'Practicante', 'MASCOTAS',       'S', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Practicante', 'SOLICITUDES',    'S', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Practicante', 'SEGUIMIENTOS',   'N', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Practicante', 'NOTIFICACIONES', 'N', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Practicante', 'MI_PERFIL',      'N', 'S', 'N' FROM DUAL
+
+  UNION ALL SELECT 'Adoptante',   'INICIO',         'N', 'N', 'N' FROM DUAL
+  UNION ALL SELECT 'Adoptante',   'MASCOTAS',       'N', 'N', 'N' FROM DUAL
+  UNION ALL SELECT 'Adoptante',   'SOLICITUDES',    'S', 'N', 'N' FROM DUAL
+  UNION ALL SELECT 'Adoptante',   'SEGUIMIENTOS',   'N', 'N', 'N' FROM DUAL
+  UNION ALL SELECT 'Adoptante',   'NOTIFICACIONES', 'N', 'S', 'N' FROM DUAL
+  UNION ALL SELECT 'Adoptante',   'MI_PERFIL',      'N', 'S', 'N' FROM DUAL
+) m
+JOIN PERFILES      p ON p.NOMBRE_PERFIL = m.PERFIL
+JOIN OPCIONES_MENU o ON o.NOMBRE_OPCION = m.OPCION;
