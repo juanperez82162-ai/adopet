@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { config } from './config/env.js';
 import { conConexion } from './config/database.js';
 import { exito, error } from './utils/respuesta.js';
 import { manejarErrores } from './middlewares/errores.middleware.js';
@@ -11,7 +13,13 @@ import { inicioRoutes } from './modules/inicio/inicio.routes.js';
 
 export const app = express();
 
-app.use(cors());
+// Cabeceras de seguridad (helmet). crossOriginResourcePolicy en
+// 'cross-origin' para que el frontend, que corre en otro puerto, pueda
+// mostrar archivos servidos por el backend (por ejemplo, las fotos).
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// Solo el frontend de ADOPET puede llamar a la API desde un navegador.
+app.use(cors({ origin: config.frontendUrl }));
 app.use(express.json());
 
 app.get('/api/health', async (req, res) => {
