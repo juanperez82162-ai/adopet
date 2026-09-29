@@ -4,6 +4,7 @@ import { config } from '../../config/env.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 import {
     buscarPermiso,
+    buscarMenu,
     buscarIdPerfil,
     verificarCatalogosRegistro,
     insertarUsuario,
@@ -34,6 +35,22 @@ export async function tienePermiso(documento, nombreOpcion, accion) {
     }
 
     return permiso[accion] === 'S';
+}
+
+export async function obtenerMenu(documento) {
+    const filas = await buscarMenu(documento);
+
+    return filas.map((fila) => ({
+        opcion: fila.NOMBRE_OPCION,
+        etiqueta: fila.ETIQUETA,
+        ruta: fila.RUTA,
+        orden: fila.ORDEN,
+        permisos: {
+            crear: fila.CREAR === 'S',
+            modificar: fila.MODIFICAR === 'S',
+            eliminar: fila.ELIMINAR === 'S'
+        }
+    }));
 }
 
 export async function registrar(datos) {

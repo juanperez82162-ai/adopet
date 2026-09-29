@@ -1,4 +1,4 @@
-import { registrar, iniciarSesion } from './auth.service.js';
+import { registrar, iniciarSesion, obtenerMenu } from './auth.service.js';
 import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 
@@ -12,6 +12,11 @@ export async function login(req, res) {
     const { correo, contrasena } = validarDatosLogin(req.body);
     const sesion = await iniciarSesion(correo, contrasena);
     return exito(res, sesion);
+}
+
+export async function menu(req, res) {
+    const opciones = await obtenerMenu(req.usuario.documento);
+    return exito(res, opciones);
 }
 
 function validarDatosRegistro(cuerpo = {}) {

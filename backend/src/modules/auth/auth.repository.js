@@ -28,6 +28,35 @@ export async function buscarPermiso(documento, nombreOpcion) {
     }
 }
 
+export async function buscarMenu(documento) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT o.NOMBRE_OPCION, o.ETIQUETA, o.RUTA, o.ORDEN,
+                    po.CREAR, po.MODIFICAR, po.ELIMINAR
+               FROM USUARIOS u
+               JOIN PERFILES p           ON p.ID_PERFIL      = u.ID_PERFIL
+               JOIN PERFILES_OPCIONES po ON po.ID_PERFIL     = p.ID_PERFIL
+               JOIN OPCIONES_MENU o      ON o.ID_OPCION_MENU = po.ID_OPCION_MENU
+              WHERE u.DOCUMENTO = :documento
+                AND u.ACTIVO = 'S'
+                AND p.ACTIVO = 'S'
+                AND o.ACTIVO = 'S'
+              ORDER BY o.ORDEN`,
+            { documento }
+        );
+
+        return resultado.rows;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}
+
 export async function buscarIdPerfil(nombrePerfil) {
     let conexion;
 
