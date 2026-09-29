@@ -38,6 +38,10 @@ export function Login() {
                     <p className="aviso aviso-exito">Cuenta creada. Ya puede iniciar sesión.</p>
                 )}
 
+                {state?.contrasenaCambiada && (
+                    <p className="aviso aviso-exito">Tu contraseña se cambió. Ya puedes iniciar sesión.</p>
+                )}
+
                 <label className="campo">
                     Correo
                     <input
@@ -59,6 +63,8 @@ export function Login() {
                         required
                     />
                 </label>
+
+                <Link to="/recuperar" className="enlace-secundario">¿Olvidaste tu contraseña?</Link>
 
                 {error && <p className="aviso aviso-error">{error}</p>}
 

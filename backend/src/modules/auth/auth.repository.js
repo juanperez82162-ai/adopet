@@ -155,3 +155,45 @@ export async function buscarUsuarioPorCorreo(correo) {
         }
     }
 }
+export async function buscarUsuarioPorDocumento(documento) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT DOCUMENTO, NOMBRE, CORREO, CONTRASENA_HASH, ACTIVO
+               FROM USUARIOS
+              WHERE DOCUMENTO = :documento`,
+            { documento }
+        );
+
+        return resultado.rows[0] || null;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}
+
+export async function actualizarContrasena(documento, contrasenaHash) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `UPDATE USUARIOS
+                SET CONTRASENA_HASH = :contrasenaHash
+              WHERE DOCUMENTO = :documento`,
+            { contrasenaHash, documento },
+            { autoCommit: true }
+        );
+
+        return resultado.rowsAffected;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}

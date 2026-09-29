@@ -211,6 +211,18 @@ a {
     background: var(--arena);
 }
 
+.enlace-secundario {
+    align-self: flex-end;
+    margin-top: -0.4rem;
+    font-size: 0.88rem;
+}
+
+.boton-enlace {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+
 /* ---- Pantallas sin sesión (login y registro) ---------------------- */
 
 .pantalla-acceso {

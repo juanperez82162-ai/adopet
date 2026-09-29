@@ -11,3 +11,11 @@ export function registrar(datos) {
 export function obtenerMenu() {
     return peticion('/auth/menu');
 }
+
+export function solicitarRecuperacion(correo) {
+    return peticion('/auth/recuperar', { metodo: 'POST', cuerpo: { correo } });
+}
+
+export function restablecerContrasena(token, contrasena) {
+    return peticion('/auth/restablecer', { metodo: 'POST', cuerpo: { token, contrasena } });
+}

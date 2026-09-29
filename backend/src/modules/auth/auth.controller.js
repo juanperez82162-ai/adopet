@@ -1,4 +1,10 @@
-import { registrar, iniciarSesion, obtenerMenu } from './auth.service.js';
+import {
+    registrar,
+    iniciarSesion,
+    obtenerMenu,
+    solicitarRecuperacion,
+    restablecerContrasena
+} from './auth.service.js';
 import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 
@@ -17,6 +23,37 @@ export async function login(req, res) {
 export async function menu(req, res) {
     const opciones = await obtenerMenu(req.usuario.documento);
     return exito(res, opciones);
+}
+
+export async function recuperar(req, res) {
+    const correo = typeof req.body?.correo === 'string' ? req.body.correo.trim() : '';
+
+    if (correo.length === 0) {
+        throw new ErrorNegocio(400, 'DATOS_INVALIDOS', 'correo: es obligatorio');
+    }
+
+    await solicitarRecuperacion(correo);
+
+    // Siempre la misma respuesta, exista o no el correo.
+    return exito(res, {
+        mensaje: 'Si el correo está registrado, te enviamos un enlace para crear una nueva contraseña.'
+    });
+}
+
+export async function restablecer(req, res) {
+    const token = typeof req.body?.token === 'string' ? req.body.token : '';
+    const contrasena = typeof req.body?.contrasena === 'string' ? req.body.contrasena : '';
+
+    const reglas = [
+        [token.length > 0, 'token: es obligatorio'],
+        [contrasena.length > 0 && contrasena.length <= 72, 'contrasena: obligatoria, máximo 72 caracteres']
+    ];
+
+    lanzarSiHayErrores(reglas);
+
+    await restablecerContrasena(token, contrasena);
+
+    return exito(res, { mensaje: 'Tu contraseña se cambió. Ya puedes iniciar sesión.' });
 }
 
 function validarDatosRegistro(cuerpo = {}) {
