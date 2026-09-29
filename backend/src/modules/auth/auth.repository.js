@@ -1,11 +1,7 @@
-import { obtenerConexion } from '../../config/database.js';
+import { conConexion } from '../../config/database.js';
 
 export async function buscarPermiso(documento, nombreOpcion) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT po.CREAR, po.MODIFICAR, po.ELIMINAR
                FROM USUARIOS u
@@ -21,19 +17,11 @@ export async function buscarPermiso(documento, nombreOpcion) {
         );
 
         return resultado.rows[0] || null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function buscarMenu(documento) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT o.NOMBRE_OPCION, o.ETIQUETA, o.RUTA, o.ORDEN,
                     po.CREAR, po.MODIFICAR, po.ELIMINAR
@@ -50,19 +38,11 @@ export async function buscarMenu(documento) {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function buscarIdPerfil(nombrePerfil) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT ID_PERFIL
                FROM PERFILES
@@ -72,21 +52,13 @@ export async function buscarIdPerfil(nombrePerfil) {
         );
 
         return resultado.rows[0]?.ID_PERFIL ?? null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 // Trae la regla de formato del tipo de documento y confirma que la
 // ciudad exista. Ambos deben estar activos.
 export async function buscarReglasRegistro(idTipoDocumento, idCiudad) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const tipo = await conexion.execute(
             `SELECT SOLO_NUMEROS, LARGO_MINIMO, LARGO_MAXIMO
                FROM TIPOS_DOCUMENTO
@@ -115,19 +87,11 @@ export async function buscarReglasRegistro(idTipoDocumento, idCiudad) {
                 : null,
             ciudadValida: ciudad.rows[0].TOTAL === 1
         };
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function insertarUsuario(usuario) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         await conexion.execute(
             `INSERT INTO USUARIOS (
                  DOCUMENTO, ID_PERFIL,
@@ -144,19 +108,11 @@ export async function insertarUsuario(usuario) {
             usuario,
             { autoCommit: true }
         );
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function buscarUsuarioPorCorreo(correo) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT u.DOCUMENTO, u.PRIMER_NOMBRE, u.PRIMER_APELLIDO, u.CORREO, u.CONTRASENA_HASH, u.ACTIVO,
                     u.ID_PERFIL, p.NOMBRE_PERFIL, r.NOMBRE_ROL
@@ -168,19 +124,11 @@ export async function buscarUsuarioPorCorreo(correo) {
         );
 
         return resultado.rows[0] || null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function buscarUsuarioPorDocumento(documento) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT DOCUMENTO, PRIMER_NOMBRE, PRIMER_APELLIDO, CORREO, CONTRASENA_HASH, ACTIVO
                FROM USUARIOS
@@ -189,19 +137,11 @@ export async function buscarUsuarioPorDocumento(documento) {
         );
 
         return resultado.rows[0] || null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarContrasena(documento, contrasenaHash) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE USUARIOS
                 SET CONTRASENA_HASH = :contrasenaHash
@@ -211,20 +151,12 @@ export async function actualizarContrasena(documento, contrasenaHash) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 // Lo mínimo para refrescar la sesión al recargar la página.
 export async function buscarEstadoSesion(documento) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT u.ACTIVO, p.NOMBRE_PERFIL
                FROM USUARIOS u
@@ -234,9 +166,5 @@ export async function buscarEstadoSesion(documento) {
         );
 
         return resultado.rows[0] || null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }

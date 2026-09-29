@@ -1,13 +1,9 @@
 import oracledb from 'oracledb';
-import { obtenerConexion } from '../../config/database.js';
+import { conConexion, enTransaccion } from '../../config/database.js';
 
 // Todos los perfiles, activos o no, con cuántos usuarios tiene cada uno.
 export async function listarPerfiles() {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT p.ID_PERFIL, p.NOMBRE_PERFIL, p.ACTIVO, p.ID_ROL, r.NOMBRE_ROL,
                     (SELECT COUNT(*) FROM USUARIOS u WHERE u.ID_PERFIL = p.ID_PERFIL) AS TOTAL_USUARIOS
@@ -17,19 +13,11 @@ export async function listarPerfiles() {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function listarRoles() {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT ID_ROL, NOMBRE_ROL
                FROM ROLES
@@ -37,19 +25,11 @@ export async function listarRoles() {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function insertarPerfil(nombre, idRol) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `INSERT INTO PERFILES (ID_ROL, NOMBRE_PERFIL)
              VALUES (:idRol, :nombre)
@@ -63,19 +43,11 @@ export async function insertarPerfil(nombre, idRol) {
         );
 
         return resultado.outBinds.id[0];
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarNombrePerfil(idPerfil, nombre) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         await conexion.execute(
             `UPDATE PERFILES
                 SET NOMBRE_PERFIL = :nombre
@@ -83,19 +55,11 @@ export async function actualizarNombrePerfil(idPerfil, nombre) {
             { nombre, idPerfil },
             { autoCommit: true }
         );
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarEstadoPerfil(idPerfil, activo) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         await conexion.execute(
             `UPDATE PERFILES
                 SET ACTIVO = :activo
@@ -103,19 +67,11 @@ export async function actualizarEstadoPerfil(idPerfil, activo) {
             { activo, idPerfil },
             { autoCommit: true }
         );
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function listarOpcionesActivas() {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT ID_OPCION_MENU, NOMBRE_OPCION, ETIQUETA, ORDEN
                FROM OPCIONES_MENU
@@ -124,30 +80,18 @@ export async function listarOpcionesActivas() {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function listarPermisos() {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT ID_PERFIL, ID_OPCION_MENU, CREAR, MODIFICAR, ELIMINAR
                FROM PERFILES_OPCIONES`
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 // Reemplaza los permisos de un perfil sobre las opciones activas, en UNA
@@ -155,11 +99,7 @@ export async function listarPermisos() {
 // permisos: [{ idOpcion, crear, modificar, eliminar }] con 'S' / 'N'.
 // La existencia de la fila ES el permiso de ver: quitar "Ver" borra la fila.
 export async function reemplazarPermisosPerfil(idPerfil, permisos) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return enTransaccion(async (conexion) => {
         // 1. Se quitan las filas de las opciones activas que ya no se ven.
         const conservar = permisos.map((permiso) => permiso.idOpcion);
         const marcadores = conservar.map((_, indice) => `:o${indice}`).join(', ');
@@ -200,16 +140,5 @@ export async function reemplazarPermisosPerfil(idPerfil, permisos) {
                 }))
             );
         }
-
-        await conexion.commit();
-    } catch (err) {
-        if (conexion) {
-            await conexion.rollback();
-        }
-        throw err;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
