@@ -1,0 +1,43 @@
+# Revisión automática: corre en cada push y en cada Pull Request hacia main.
+# Si algo falla, el commit o el Pull Request queda marcado con una X roja.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    name: Frontend (lint y build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run build
+
+  backend:
+    name: Backend (sintaxis)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - name: Revisar que todos los archivos .js se puedan leer
+        run: |
+          for archivo in $(find src scripts server.js -name '*.js'); do
+            node --check "$archivo"
+          done
