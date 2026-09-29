@@ -164,6 +164,41 @@ a {
     background: var(--blanco);
 }
 
+.input-contrasena {
+    position: relative;
+    display: flex;
+}
+
+.input-contrasena input {
+    flex: 1;
+    width: 100%;
+    padding-right: 2.9rem;
+}
+
+.boton-ojo {
+    position: absolute;
+    top: 50%;
+    right: 0.4rem;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--cafe-suave);
+    cursor: pointer;
+}
+
+.boton-ojo:hover,
+.boton-ojo:focus-visible {
+    background: var(--naranja-suave);
+    color: var(--naranja-oscuro);
+    outline: none;
+}
+
 .campo-opcional {
     font-weight: 600;
     color: var(--cafe-suave);

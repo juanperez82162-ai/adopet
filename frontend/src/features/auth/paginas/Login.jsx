@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
+import { InputContrasena } from '../../../componentes/InputContrasena.jsx';
 
 export function Login() {
     const { iniciarSesion } = useSesion();
@@ -55,8 +56,7 @@ export function Login() {
 
                 <label className="campo">
                     Contraseña
-                    <input
-                        type="password"
+                    <InputContrasena
                         value={contrasena}
                         onChange={(e) => setContrasena(e.target.value)}
                         autoComplete="current-password"

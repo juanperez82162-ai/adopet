@@ -4,6 +4,7 @@ import { registrar } from '../auth.api.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
 import { Campo } from '../../../componentes/Campo.jsx';
+import { InputContrasena } from '../../../componentes/InputContrasena.jsx';
 import { RequisitosContrasena } from '../componentes/RequisitosContrasena.jsx';
 import {
     validarRegistro,
@@ -207,8 +208,7 @@ export function Registro() {
 
                 <div className="fila">
                     <Campo etiqueta="Contraseña" error={errorDe('contrasena')}>
-                        <input
-                            type="password"
+                        <InputContrasena
                             {...propiedades('contrasena')}
                             maxLength={LARGO_MAXIMO_CONTRASENA}
                             autoComplete="new-password"
@@ -216,8 +216,7 @@ export function Registro() {
                     </Campo>
 
                     <Campo etiqueta="Confirmar contraseña" error={errorDe('confirmacion')}>
-                        <input
-                            type="password"
+                        <InputContrasena
                             {...propiedades('confirmacion')}
                             maxLength={LARGO_MAXIMO_CONTRASENA}
                             autoComplete="new-password"

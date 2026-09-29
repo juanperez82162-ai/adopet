@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { restablecerContrasena } from '../auth.api.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
 import { Campo } from '../../../componentes/Campo.jsx';
+import { InputContrasena } from '../../../componentes/InputContrasena.jsx';
 import { RequisitosContrasena } from '../componentes/RequisitosContrasena.jsx';
 import { errorContrasena, errorConfirmacion, LARGO_MAXIMO_CONTRASENA } from '../validaciones.js';
 
@@ -59,8 +60,7 @@ export function RestablecerContrasena() {
                 <h1>Crea tu nueva contraseña</h1>
 
                 <Campo etiqueta="Nueva contraseña" error={errorClave}>
-                    <input
-                        type="password"
+                    <InputContrasena
                         value={contrasena}
                         onChange={(e) => setContrasena(e.target.value)}
                         maxLength={LARGO_MAXIMO_CONTRASENA}
@@ -70,8 +70,7 @@ export function RestablecerContrasena() {
                 </Campo>
 
                 <Campo etiqueta="Confirmar contraseña" error={errorRepetir}>
-                    <input
-                        type="password"
+                    <InputContrasena
                         value={confirmacion}
                         onChange={(e) => setConfirmacion(e.target.value)}
                         maxLength={LARGO_MAXIMO_CONTRASENA}
