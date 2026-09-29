@@ -12,6 +12,7 @@ import { Catalogos } from '../features/catalogos/paginas/Catalogos.jsx';
 import { MiPerfil } from '../features/usuarios/paginas/MiPerfil.jsx';
 import { Usuarios } from '../features/usuarios/paginas/Usuarios.jsx';
 import { DetalleUsuario } from '../features/usuarios/paginas/DetalleUsuario.jsx';
+import { Accesos } from '../features/accesos/paginas/Accesos.jsx';
 
 export function Rutas() {
     return (
@@ -40,6 +41,10 @@ export function Rutas() {
                 <Route
                     path="/usuarios/:documento"
                     element={<RequiereModulo opcion="USUARIOS"><DetalleUsuario /></RequiereModulo>}
+                />
+                <Route
+                    path="/accesos"
+                    element={<RequiereModulo opcion="ACCESOS"><Accesos /></RequiereModulo>}
                 />
                 {/* Cada módulo agrega aquí su ruta cuando exista su pantalla. */}
                 <Route path="*" element={<PaginaPendiente />} />

@@ -812,7 +812,7 @@ a {
 
 .datos-fijos {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     margin: 0;
     padding: 0.9rem 1rem;
@@ -939,6 +939,141 @@ a {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+/* ---- Accesos ------------------------------------------------------ */
+
+.tabla .columna-casilla {
+    width: 110px;
+    text-align: center;
+}
+
+.casilla {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--naranja);
+    cursor: pointer;
+}
+
+.casilla:disabled {
+    cursor: not-allowed;
+}
+
+.modulo-nombre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.acciones-accesos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.tabla-contenedor + .aviso {
+    margin-top: 1rem;
+}
+
+.pestana:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.boton-nuevo-perfil {
+    margin-bottom: 1rem;
+}
+
+.nuevo-perfil {
+    max-width: 640px;
+    margin-bottom: 1.25rem;
+}
+
+.pestana-inactiva {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.datos-perfil {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.datos-perfil-resumen,
+.datos-perfil-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.renombrar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.renombrar .campo {
+    min-width: 220px;
+}
+
+/* ---- Usuario vetado ----------------------------------------------- */
+
+.pantalla-vetado {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background: var(--crema);
+}
+
+.vetado-tarjeta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 560px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    border-top: 8px solid var(--error);
+}
+
+.vetado-logo {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+}
+
+.vetado-icono {
+    display: grid;
+    place-items: center;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: var(--error-suave);
+    color: var(--error);
+}
+
+.vetado-tarjeta h1 {
+    font-size: 2rem;
+    color: var(--error);
+}
+
+.vetado-tarjeta p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.vetado-principal {
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 /* ---- Pantallas medianas y pequeñas -------------------------------- */

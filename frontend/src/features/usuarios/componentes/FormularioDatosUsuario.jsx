@@ -28,7 +28,9 @@ function aFechaLegible(fecha) {
 // Formulario de los datos editables de un usuario. Lo usan Mi perfil
 // (cada quien lo suyo) y Usuarios (el Admin edita a otros).
 // guardar(datos) hace la petición y devuelve el usuario actualizado.
-export function FormularioDatosUsuario({ usuario, ciudades, puedeModificar, guardar, titulo = 'Datos' }) {
+// mostrarPerfil: en Mi perfil se muestra el perfil y el rol; en Usuarios
+// no hace falta, porque allí tienen su propia tarjeta.
+export function FormularioDatosUsuario({ usuario, ciudades, puedeModificar, guardar, titulo = 'Datos', mostrarPerfil = false }) {
     const formulario = useFormulario(aFormulario(usuario), validarDatosPerfil);
     const { datos, propiedades, errorDe } = formulario;
     const referencia = useRef(null);
@@ -82,6 +84,12 @@ export function FormularioDatosUsuario({ usuario, ciudades, puedeModificar, guar
                     <dt>Registrado el</dt>
                     <dd>{aFechaLegible(usuario.fechaRegistro)}</dd>
                 </div>
+                {mostrarPerfil && (
+                    <div>
+                        <dt>Perfil</dt>
+                        <dd>{usuario.perfil} ({usuario.rol === 'STAFF' ? 'staff' : 'adoptante'})</dd>
+                    </div>
+                )}
             </dl>
             <small className="campo-ayuda">
                 El documento y la fecha de nacimiento no se pueden cambiar.

@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useSesion } from '../hooks/useSesion.js';
 import { Menu } from './Menu.jsx';
 import { Logo } from './Logo.jsx';
+import { PantallaVetado } from './PantallaVetado.jsx';
 
 // Estructura común de todas las pantallas con sesión:
 // encabezado arriba, menú a la izquierda y el contenido de la página.
@@ -12,6 +13,11 @@ export function Plantilla() {
     function salir() {
         cerrarSesion();
         navegar('/login', { replace: true });
+    }
+
+    // Un usuario vetado entra, pero solo ve el aviso del veto.
+    if (usuario.vetado) {
+        return <PantallaVetado nombre={usuario.nombre} alSalir={salir} />;
     }
 
     const inicial = usuario.nombre?.trim().charAt(0).toUpperCase() || '?';

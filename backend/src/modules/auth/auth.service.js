@@ -10,8 +10,10 @@ import {
     insertarUsuario,
     buscarUsuarioPorCorreo,
     buscarUsuarioPorDocumento,
-    actualizarContrasena
+    actualizarContrasena,
+    buscarEstadoSesion
 } from './auth.repository.js';
+import { PERFIL_ADMIN, PERFIL_ADOPTANTE, PERFIL_VETADO } from '../../utils/perfiles.js';
 import { enviarCorreo } from '../../utils/correo.js';
 import {
     normalizarUsuario,
@@ -47,30 +49,43 @@ export async function tienePermiso(documento, nombreOpcion, accion) {
     return permiso[accion] === 'S';
 }
 
+// Menú y perfil actual. Se pide al entrar y al recargar la página, así
+// que un cambio de perfil (por ejemplo, un veto) se nota sin volver a
+// iniciar sesión. Si la cuenta se desactivó, la sesión deja de valer.
 export async function obtenerMenu(documento) {
+    const estado = await buscarEstadoSesion(documento);
+
+    if (!estado || estado.ACTIVO !== 'S') {
+        throw new ErrorNegocio(401, 'SESION_INVALIDA', 'La cuenta está desactivada. Comuníquese con la fundación.');
+    }
+
     const filas = await buscarMenu(documento);
 
-    return filas.map((fila) => ({
-        opcion: fila.NOMBRE_OPCION,
-        etiqueta: fila.ETIQUETA,
-        ruta: fila.RUTA,
-        orden: fila.ORDEN,
-        permisos: {
-            crear: fila.CREAR === 'S',
-            modificar: fila.MODIFICAR === 'S',
-            eliminar: fila.ELIMINAR === 'S'
-        }
-    }));
+    return {
+        perfil: estado.NOMBRE_PERFIL,
+        vetado: estado.NOMBRE_PERFIL === PERFIL_VETADO,
+        opciones: filas.map((fila) => ({
+            opcion: fila.NOMBRE_OPCION,
+            etiqueta: fila.ETIQUETA,
+            ruta: fila.RUTA,
+            orden: fila.ORDEN,
+            permisos: {
+                crear: fila.CREAR === 'S',
+                modificar: fila.MODIFICAR === 'S',
+                eliminar: fila.ELIMINAR === 'S'
+            }
+        }))
+    };
 }
 
 // cuerpo: los datos tal como llegan (del formulario o del script).
 // Aquí se limpian y se validan TODOS, sin importar quién llame.
 export async function registrar(cuerpo) {
-    return crearUsuario(cuerpo, 'Adoptante');
+    return crearUsuario(cuerpo, PERFIL_ADOPTANTE);
 }
 
 export async function crearAdministrador(cuerpo) {
-    return crearUsuario(cuerpo, 'Admin');
+    return crearUsuario(cuerpo, PERFIL_ADMIN);
 }
 
 async function crearUsuario(cuerpo, nombrePerfil) {
@@ -170,7 +185,8 @@ export async function iniciarSesion(correo, contrasena) {
             primerNombre: usuario.PRIMER_NOMBRE,
             correo: usuario.CORREO,
             perfil: usuario.NOMBRE_PERFIL,
-            rol: usuario.NOMBRE_ROL
+            rol: usuario.NOMBRE_ROL,
+            vetado: usuario.NOMBRE_PERFIL === PERFIL_VETADO
         }
     };
 }

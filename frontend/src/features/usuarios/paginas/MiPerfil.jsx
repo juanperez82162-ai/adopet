@@ -58,6 +58,7 @@ function DatosPerfil({ perfil, ciudades, alGuardar }) {
     return (
         <FormularioDatosUsuario
             titulo="Mis datos"
+            mostrarPerfil
             usuario={perfil}
             ciudades={ciudades}
             puedeModificar={tienePermiso('MI_PERFIL', 'modificar')}

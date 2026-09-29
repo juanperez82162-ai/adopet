@@ -217,3 +217,26 @@ export async function actualizarContrasena(documento, contrasenaHash) {
         }
     }
 }
+
+// Lo mínimo para refrescar la sesión al recargar la página.
+export async function buscarEstadoSesion(documento) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT u.ACTIVO, p.NOMBRE_PERFIL
+               FROM USUARIOS u
+               JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL
+              WHERE u.DOCUMENTO = :documento`,
+            { documento }
+        );
+
+        return resultado.rows[0] || null;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}
