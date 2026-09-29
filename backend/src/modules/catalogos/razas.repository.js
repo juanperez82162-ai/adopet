@@ -138,3 +138,27 @@ export async function actualizarActivoRaza(id, activo) {
         }
     }
 }
+
+// Cuántas razas activas quedan en la misma especie sin contar la indicada.
+export async function contarOtrasRazasActivas(id) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT COUNT(*) AS TOTAL
+               FROM RAZAS
+              WHERE ACTIVO = 'S'
+                AND ID_RAZA <> :id
+                AND ID_ESPECIE = (SELECT ID_ESPECIE FROM RAZAS WHERE ID_RAZA = :id)`,
+            { id }
+        );
+
+        return resultado.rows[0].TOTAL;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}

@@ -5,7 +5,8 @@ import {
     especieActiva,
     insertarRaza,
     actualizarNombreRaza,
-    actualizarActivoRaza
+    actualizarActivoRaza,
+    contarOtrasRazasActivas
 } from './razas.repository.js';
 
 export const LARGO_NOMBRE_RAZA = 50;
@@ -52,6 +53,16 @@ export async function renombrarRaza(id, nombre) {
 }
 
 export async function cambiarEstadoRaza(id, activo) {
+    // Cada especie debe conservar al menos una raza activa (por ejemplo Mestizo),
+    // o no se podría registrar ninguna mascota de esa especie.
+    if (!activo && (await contarOtrasRazasActivas(id)) === 0) {
+        throw new ErrorNegocio(
+            409,
+            'ULTIMO_VALOR_ACTIVO',
+            'No se puede desactivar: es la última raza activa de esta especie.'
+        );
+    }
+
     const filasAfectadas = await actualizarActivoRaza(id, activo ? 'S' : 'N');
 
     if (filasAfectadas === 0) {

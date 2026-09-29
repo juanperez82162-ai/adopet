@@ -6,7 +6,8 @@ import {
     listarTodos,
     insertar,
     actualizar,
-    actualizarActivo
+    actualizarActivo,
+    contarOtrosActivos
 } from './catalogos.repository.js';
 
 // Qué catálogos existen y qué reglas tiene cada uno, para que la pantalla
@@ -118,6 +119,16 @@ export async function cambiarEstado(catalogo, id, activo) {
             409,
             'CATALOGO_NO_DESACTIVABLE',
             'Los valores de este catálogo no se pueden desactivar: el flujo del sistema depende de ellos.'
+        );
+    }
+
+    // Si se desactivara el último valor activo, el formulario que usa
+    // este catálogo quedaría sin opciones y nadie podría llenarlo.
+    if (!activo && (await contarOtrosActivos(catalogo, id)) === 0) {
+        throw new ErrorNegocio(
+            409,
+            'ULTIMO_VALOR_ACTIVO',
+            'No se puede desactivar: es el último valor activo del catálogo y los formularios quedarían sin opciones.'
         );
     }
 

@@ -142,3 +142,26 @@ export async function actualizarActivo(catalogo, id, activo) {
         }
     }
 }
+
+// Cuántos valores activos quedan en el catálogo sin contar el indicado.
+export async function contarOtrosActivos(catalogo, id) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT COUNT(*) AS TOTAL
+               FROM ${catalogo.tabla}
+              WHERE ACTIVO = 'S'
+                AND ${catalogo.columnaId} <> :id`,
+            { id }
+        );
+
+        return resultado.rows[0].TOTAL;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}
