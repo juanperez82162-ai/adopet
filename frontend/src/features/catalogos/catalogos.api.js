@@ -16,7 +16,7 @@ export function listarDefiniciones() {
 }
 
 // Cada catálogo se administra con las mismas cuatro operaciones.
-// 'datos' es { nombre } o { nombre, nivel } según el catálogo.
+// 'datos' es { nombre } o { nombre, descripcion } según el catálogo.
 // Razas usa sus propias URLs porque depende de la especie.
 export function operacionesDe(definicion, idEspecie) {
     if (definicion.dependeDeEspecie) {

@@ -7,6 +7,10 @@ import { obtenerConexion } from '../../config/database.js';
 function columnasExtra(catalogo) {
     const columnas = [];
 
+    if (catalogo.conDescripcion) {
+        columnas.push('DESCRIPCION');
+    }
+
     if (catalogo.conNivel) {
         columnas.push('NIVEL');
     }
@@ -24,11 +28,13 @@ export async function listarActivos(catalogo) {
     try {
         conexion = await obtenerConexion();
 
+        const orden = catalogo.conNivel ? `NIVEL, ${catalogo.columnaId}` : catalogo.columnaId;
+
         const resultado = await conexion.execute(
             `SELECT ${catalogo.columnaId} AS ID, NOMBRE${columnasExtra(catalogo)}
                FROM ${catalogo.tabla}
               WHERE ACTIVO = 'S'
-              ORDER BY ${catalogo.columnaId}`
+              ORDER BY ${orden}`
         );
 
         return resultado.rows;
@@ -45,10 +51,12 @@ export async function listarTodos(catalogo) {
     try {
         conexion = await obtenerConexion();
 
+        const orden = catalogo.conNivel ? `NIVEL, ${catalogo.columnaId}` : catalogo.columnaId;
+
         const resultado = await conexion.execute(
             `SELECT ${catalogo.columnaId} AS ID, NOMBRE, ACTIVO${columnasExtra(catalogo)}
                FROM ${catalogo.tabla}
-              ORDER BY ${catalogo.columnaId}`
+              ORDER BY ${orden}`
         );
 
         return resultado.rows;
@@ -59,28 +67,21 @@ export async function listarTodos(catalogo) {
     }
 }
 
-export async function insertar(catalogo, { nombre, nivel }) {
+// Solo lo usan los catálogos abiertos (sin nivel ni descripción obligatoria).
+export async function insertar(catalogo, { nombre }) {
     let conexion;
 
     try {
         conexion = await obtenerConexion();
 
-        const columnas = catalogo.conNivel ? 'NOMBRE, NIVEL' : 'NOMBRE';
-        const valores = catalogo.conNivel ? ':nombre, :nivel' : ':nombre';
-        const binds = {
-            nombre,
-            id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
-        };
-
-        if (catalogo.conNivel) {
-            binds.nivel = nivel;
-        }
-
         const resultado = await conexion.execute(
-            `INSERT INTO ${catalogo.tabla} (${columnas})
-             VALUES (${valores})
+            `INSERT INTO ${catalogo.tabla} (NOMBRE)
+             VALUES (:nombre)
              RETURNING ${catalogo.columnaId} INTO :id`,
-            binds,
+            {
+                nombre,
+                id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
+            },
             { autoCommit: true }
         );
 
@@ -92,14 +93,17 @@ export async function insertar(catalogo, { nombre, nivel }) {
     }
 }
 
-export async function actualizar(catalogo, id, { nombre, nivel }) {
+// El nivel NO se edita desde la aplicación: lo definen las migraciones.
+export async function actualizar(catalogo, id, { nombre, descripcion }) {
     let conexion;
 
     try {
         conexion = await obtenerConexion();
 
-        const asignaciones = catalogo.conNivel ? 'NOMBRE = :nombre, NIVEL = :nivel' : 'NOMBRE = :nombre';
-        const binds = catalogo.conNivel ? { nombre, nivel, id } : { nombre, id };
+        const asignaciones = catalogo.conDescripcion
+            ? 'NOMBRE = :nombre, DESCRIPCION = :descripcion'
+            : 'NOMBRE = :nombre';
+        const binds = catalogo.conDescripcion ? { nombre, descripcion, id } : { nombre, id };
 
         const resultado = await conexion.execute(
             `UPDATE ${catalogo.tabla}

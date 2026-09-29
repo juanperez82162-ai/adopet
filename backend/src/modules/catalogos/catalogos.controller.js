@@ -1,6 +1,6 @@
 import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
-import { CATALOGOS } from './catalogos.config.js';
+import { CATALOGOS, LARGO_DESCRIPCION } from './catalogos.config.js';
 import {
     obtenerDefiniciones,
     obtenerActivos,
@@ -67,14 +67,14 @@ function validarDatos(cuerpo = {}, catalogo) {
 
     const datos = { nombre };
 
-    if (catalogo.conNivel) {
-        const nivel = Number(cuerpo.nivel);
+    if (catalogo.conDescripcion) {
+        const descripcion = typeof cuerpo.descripcion === 'string' ? cuerpo.descripcion.trim() : '';
 
-        if (!Number.isInteger(nivel) || nivel < 1 || nivel > 3) {
-            errores.push('nivel: obligatorio, debe ser 1, 2 o 3');
+        if (descripcion.length === 0 || descripcion.length > LARGO_DESCRIPCION) {
+            errores.push(`descripcion: obligatoria, máximo ${LARGO_DESCRIPCION} caracteres`);
         }
 
-        datos.nivel = nivel;
+        datos.descripcion = descripcion;
     }
 
     if (errores.length > 0) {

@@ -2,19 +2,23 @@ import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarDefiniciones, listarCatalogo, operacionesDe } from '../catalogos.api.js';
 
-const NIVELES = [
-    { valor: 1, etiqueta: '1 · Bajo' },
-    { valor: 2, etiqueta: '2 · Medio' },
-    { valor: 3, etiqueta: '3 · Alto' }
-];
-
-function SelectorNivel({ valor, onChange, className = '' }) {
+// Explica qué es el nivel y qué significa cada uno en el catálogo elegido.
+function ExplicacionNivel({ definicion }) {
     return (
-        <select className={className} value={valor} onChange={(e) => onChange(Number(e.target.value))}>
-            {NIVELES.map((nivel) => (
-                <option key={nivel.valor} value={nivel.valor}>{nivel.etiqueta}</option>
-            ))}
-        </select>
+        <div className="explicacion">
+            <p className="explicacion-titulo">¿Qué es el nivel?</p>
+            <p>
+                Es el grupo que usa el sistema para calcular la compatibilidad entre el adoptante y la mascota.
+                Varios valores pueden compartir el mismo nivel. Los niveles de este catálogo son:
+            </p>
+            <ul className="explicacion-niveles">
+                {Object.entries(definicion.niveles).map(([nivel, etiqueta]) => (
+                    <li key={nivel}>
+                        <span className="insignia insignia-nivel">{nivel}</span> {etiqueta}
+                    </li>
+                ))}
+            </ul>
+        </div>
     );
 }
 
@@ -34,10 +38,9 @@ export function Catalogos() {
     const [aviso, setAviso] = useState('');
 
     const [nuevoNombre, setNuevoNombre] = useState('');
-    const [nuevoNivel, setNuevoNivel] = useState(2);
     const [editandoId, setEditandoId] = useState(null);
     const [nombreEditado, setNombreEditado] = useState('');
-    const [nivelEditado, setNivelEditado] = useState(2);
+    const [descripcionEditada, setDescripcionEditada] = useState('');
 
     async function cargarValores(definicion, especie) {
         setCargando(true);
@@ -85,7 +88,6 @@ export function Catalogos() {
     function limpiarEdicion() {
         setEditandoId(null);
         setNuevoNombre('');
-        setNuevoNivel(2);
         setAviso('');
     }
 
@@ -100,11 +102,6 @@ export function Catalogos() {
         setIdEspecie(especie);
         limpiarEdicion();
         cargarValores(seleccionado, especie);
-    }
-
-    // Arma los datos a enviar: el nivel solo va en los catálogos que lo usan.
-    function armarDatos(nombre, nivel) {
-        return seleccionado.conNivel ? { nombre, nivel } : { nombre };
     }
 
     // Ejecuta una acción, muestra el resultado y recarga la tabla.
@@ -126,23 +123,25 @@ export function Catalogos() {
         const nombre = nuevoNombre.trim();
 
         ejecutar(async (operaciones) => {
-            await operaciones.crear(armarDatos(nombre, nuevoNivel));
+            await operaciones.crear({ nombre });
             setNuevoNombre('');
-            setNuevoNivel(2);
         }, `"${nombre}" se agregó a ${seleccionado.etiqueta.toLowerCase()}.`);
     }
 
     function empezarEdicion(valor) {
         setEditandoId(valor.id);
         setNombreEditado(valor.nombre);
-        setNivelEditado(valor.nivel ?? 2);
+        setDescripcionEditada(valor.descripcion ?? '');
     }
 
     function guardarEdicion(valor) {
         const nombre = nombreEditado.trim();
+        const datos = seleccionado.conDescripcion
+            ? { nombre, descripcion: descripcionEditada.trim() }
+            : { nombre };
 
         ejecutar(async (operaciones) => {
-            await operaciones.modificar(valor.id, armarDatos(nombre, nivelEditado));
+            await operaciones.modificar(valor.id, datos);
             setEditandoId(null);
         }, `"${nombre}" se actualizó.`);
     }
@@ -196,12 +195,7 @@ export function Catalogos() {
                         </label>
                     )}
 
-                    {seleccionado.conNivel && (
-                        <p className="nota">
-                            <strong>Nivel:</strong> {seleccionado.descripcionNivel}. El motor de compatibilidad
-                            compara niveles, así que cada valor nuevo debe tener su nivel correcto.
-                        </p>
-                    )}
+                    {seleccionado.conNivel && <ExplicacionNivel definicion={seleccionado} />}
 
                     {seleccionado.permiteCrear && puedeCrear && (
                         <form className="formulario-linea" onSubmit={crear}>
@@ -212,28 +206,28 @@ export function Catalogos() {
                                 placeholder={`Nuevo valor en ${seleccionado.etiqueta.toLowerCase()}`}
                                 required
                             />
-                            {seleccionado.conNivel && (
-                                <SelectorNivel valor={nuevoNivel} onChange={setNuevoNivel} className="selector-linea" />
-                            )}
                             <button type="submit" className="boton">Agregar</button>
                         </form>
                     )}
 
                     {!seleccionado.permiteCrear && (
                         <p className="nota">
-                            Este catálogo tiene valores fijos: el flujo de adopción está programado sobre cada uno,
-                            así que no se agregan ni se desactivan desde aquí.
+                            {seleccionado.permiteDesactivar
+                                ? 'Catálogo predefinido: sus opciones ya vienen definidas. Aquí se puede corregir el texto o desactivar una opción, pero no agregar nuevas.'
+                                : 'Catálogo fijo: el flujo de adopción está programado sobre cada estado, así que no se agregan ni se desactivan.'}
                         </p>
                     )}
 
                     {cargando ? (
                         <p className="mensaje-carga">Cargando...</p>
                     ) : (
+                        <div className="tabla-contenedor">
                         <table className="tabla">
                             <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>Nombre</th>
+                                    {seleccionado.conDescripcion && <th>Descripción</th>}
                                     {seleccionado.conNivel && <th>Nivel</th>}
                                     <th>Estado</th>
                                     {hayAcciones && <th className="columna-acciones">Acciones</th>}
@@ -262,13 +256,25 @@ export function Catalogos() {
                                                     </>
                                                 )}
                                             </td>
-                                            {seleccionado.conNivel && (
-                                                <td>
+                                            {seleccionado.conDescripcion && (
+                                                <td className="columna-descripcion">
                                                     {editando ? (
-                                                        <SelectorNivel valor={nivelEditado} onChange={setNivelEditado} className="entrada-tabla" />
+                                                        <textarea
+                                                            className="entrada-tabla"
+                                                            value={descripcionEditada}
+                                                            onChange={(e) => setDescripcionEditada(e.target.value)}
+                                                            maxLength={seleccionado.largoDescripcion}
+                                                            rows={2}
+                                                        />
                                                     ) : (
-                                                        <span className="insignia insignia-nivel">{valor.nivel}</span>
+                                                        valor.descripcion
                                                     )}
+                                                </td>
+                                            )}
+                                            {seleccionado.conNivel && (
+                                                <td className="columna-nivel">
+                                                    <span className="insignia insignia-nivel">{valor.nivel}</span>{' '}
+                                                    {valor.etiquetaNivel}
                                                 </td>
                                             )}
                                             <td>
@@ -308,6 +314,7 @@ export function Catalogos() {
                                 })}
                             </tbody>
                         </table>
+                        </div>
                     )}
                 </div>
             )}

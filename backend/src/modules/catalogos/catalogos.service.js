@@ -1,5 +1,5 @@
 import { ErrorNegocio } from '../../utils/errores.js';
-import { CATALOGOS } from './catalogos.config.js';
+import { CATALOGOS, LARGO_DESCRIPCION } from './catalogos.config.js';
 import { LARGO_NOMBRE_RAZA } from './razas.service.js';
 import {
     listarActivos,
@@ -18,9 +18,11 @@ export function obtenerDefiniciones() {
         largoNombre: catalogo.largoNombre,
         permiteCrear: catalogo.permiteCrear,
         permiteDesactivar: catalogo.permiteDesactivar,
-        conNivel: catalogo.conNivel,
-        descripcionNivel: catalogo.descripcionNivel || null,
-        conOtro: catalogo.conOtro,
+        conDescripcion: Boolean(catalogo.conDescripcion),
+        largoDescripcion: LARGO_DESCRIPCION,
+        conNivel: Boolean(catalogo.conNivel),
+        niveles: catalogo.niveles || null,
+        conOtro: Boolean(catalogo.conOtro),
         dependeDeEspecie: false
     }));
 
@@ -31,8 +33,10 @@ export function obtenerDefiniciones() {
         largoNombre: LARGO_NOMBRE_RAZA,
         permiteCrear: true,
         permiteDesactivar: true,
+        conDescripcion: false,
+        largoDescripcion: LARGO_DESCRIPCION,
         conNivel: false,
-        descripcionNivel: null,
+        niveles: null,
         conOtro: false,
         dependeDeEspecie: true
     };
@@ -47,8 +51,13 @@ function aValor(catalogo, fila, incluirActivo) {
         valor.activo = fila.ACTIVO === 'S';
     }
 
+    if (catalogo.conDescripcion) {
+        valor.descripcion = fila.DESCRIPCION;
+    }
+
     if (catalogo.conNivel) {
         valor.nivel = fila.NIVEL;
+        valor.etiquetaNivel = catalogo.niveles?.[fila.NIVEL] || null;
     }
 
     if (catalogo.conOtro) {
@@ -73,7 +82,7 @@ export async function crear(catalogo, datos) {
         throw new ErrorNegocio(
             409,
             'CATALOGO_SOLO_MIGRACION',
-            'Este catálogo tiene valores fijos: el flujo del sistema depende de cada uno.'
+            'Este catálogo es predefinido: sus valores se definen en la base de datos, no desde la aplicación.'
         );
     }
 
