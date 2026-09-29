@@ -5,12 +5,15 @@ export function exito(res, datos, codigoHttp = 200) {
     });
 }
 
-export function error(res, codigoHttp, codigo, mensaje) {
+export function error(res, codigoHttp, codigo, mensaje, detalles = null) {
+    const cuerpo = { codigo, mensaje };
+
+    if (detalles) {
+        cuerpo.detalles = detalles;
+    }
+
     return res.status(codigoHttp).json({
         ok: false,
-        error: {
-            codigo,
-            mensaje
-        }
+        error: cuerpo
     });
 }

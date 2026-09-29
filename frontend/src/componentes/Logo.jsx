@@ -1,11 +1,10 @@
-import { Huella } from './Huella.jsx';
+import icono from '../assets/icono-bello-animal.webp';
 
-export function Logo({ grande = false }) {
+// Marca del encabezado: el círculo con los perritos de la fundación y el nombre del sistema.
+export function Logo() {
     return (
-        <span className={grande ? 'logo logo-grande' : 'logo'}>
-            <span className="logo-icono">
-                <Huella tamano={grande ? 30 : 20} />
-            </span>
+        <span className="logo">
+            <img src={icono} alt="" className="logo-icono" width="40" height="40" />
             ADOPET
         </span>
     );

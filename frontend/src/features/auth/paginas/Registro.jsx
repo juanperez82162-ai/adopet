@@ -3,19 +3,39 @@ import { Link, useNavigate } from 'react-router-dom';
 import { registrar } from '../auth.api.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
+import { Campo } from '../../../componentes/Campo.jsx';
+import { RequisitosContrasena } from '../componentes/RequisitosContrasena.jsx';
+import {
+    validarRegistro,
+    ayudaDocumento,
+    fechaHaceAnios,
+    EDAD_MINIMA,
+    EDAD_MAXIMA,
+    LARGO_MAXIMO_NOMBRE,
+    LARGO_MAXIMO_CORREO,
+    LARGO_MAXIMO_DIRECCION,
+    LARGO_MAXIMO_CONTRASENA
+} from '../validaciones.js';
 
 const FORMULARIO_VACIO = {
-    documento: '',
     idTipoDocumento: '',
-    nombre: '',
+    documento: '',
+    primerNombre: '',
+    segundoNombre: '',
+    primerApellido: '',
+    segundoApellido: '',
     correo: '',
     contrasena: '',
     confirmacion: '',
     telefono: '',
-    direccion: '',
+    fechaNacimiento: '',
     idCiudad: '',
-    fechaNacimiento: ''
+    direccion: ''
 };
+
+// Límites del calendario: nadie menor de 18 ni mayor de 100 años.
+const FECHA_MAXIMA = fechaHaceAnios(EDAD_MINIMA);
+const FECHA_MINIMA = fechaHaceAnios(EDAD_MAXIMA);
 
 export function Registro() {
     const navegar = useNavigate();
@@ -23,7 +43,13 @@ export function Registro() {
     const [datos, setDatos] = useState(FORMULARIO_VACIO);
     const [tiposDocumento, setTiposDocumento] = useState([]);
     const [ciudades, setCiudades] = useState([]);
-    const [error, setError] = useState('');
+
+    // tocados: campos de los que el usuario ya salió (ahí se muestran errores).
+    // intentoEnviar: al pulsar "Crear cuenta" se muestran todos.
+    const [tocados, setTocados] = useState({});
+    const [intentoEnviar, setIntentoEnviar] = useState(false);
+    const [erroresServidor, setErroresServidor] = useState({});
+    const [aviso, setAviso] = useState('');
     const [enviando, setEnviando] = useState(false);
 
     // Las listas salen de la base (catálogos activos), no del código.
@@ -33,21 +59,55 @@ export function Registro() {
                 setTiposDocumento(tipos);
                 setCiudades(listaCiudades);
             })
-            .catch((err) => setError(err.message));
+            .catch((err) => setAviso(err.message));
     }, []);
+
+    const reglaDocumento = tiposDocumento.find((tipo) => String(tipo.id) === datos.idTipoDocumento) || null;
+    const errores = validarRegistro(datos, reglaDocumento);
+
+    // El error que se ve: primero el del servidor; si no, el local,
+    // pero solo cuando el campo ya se tocó o se intentó enviar.
+    function errorDe(campo) {
+        if (erroresServidor[campo]) {
+            return erroresServidor[campo];
+        }
+
+        // La confirmación avisa en vivo desde la primera letra.
+        const enVivo = campo === 'confirmacion' && datos.confirmacion !== '';
+
+        return (tocados[campo] || intentoEnviar || enVivo) ? errores[campo] : undefined;
+    }
+
+    function propiedades(campo) {
+        return {
+            name: campo,
+            value: datos[campo],
+            onChange: cambiar,
+            onBlur: salir,
+            'aria-invalid': errorDe(campo) ? 'true' : 'false'
+        };
+    }
 
     function cambiar(evento) {
         const { name, value } = evento.target;
         setDatos((anterior) => ({ ...anterior, [name]: value }));
+        setErroresServidor((anterior) => ({ ...anterior, [name]: undefined }));
+        setAviso('');
+    }
+
+    function salir(evento) {
+        const { name } = evento.target;
+        setTocados((anterior) => ({ ...anterior, [name]: true }));
     }
 
     async function enviar(evento) {
         evento.preventDefault();
-        setError('');
+        setIntentoEnviar(true);
+        setAviso('');
 
-        // Esta verificación es solo de comodidad: el backend valida todo de nuevo.
-        if (datos.contrasena !== datos.confirmacion) {
-            setError('Las contraseñas no coinciden.');
+        if (Object.keys(errores).length > 0) {
+            setAviso('Revisa los campos marcados en rojo.');
+            enfocarPrimerError();
             return;
         }
 
@@ -56,101 +116,157 @@ export function Registro() {
         try {
             // La confirmación no se envía: solo existe en el formulario.
             await registrar({
-                documento: datos.documento,
                 idTipoDocumento: Number(datos.idTipoDocumento),
-                nombre: datos.nombre,
+                documento: datos.documento,
+                primerNombre: datos.primerNombre,
+                segundoNombre: datos.segundoNombre,
+                primerApellido: datos.primerApellido,
+                segundoApellido: datos.segundoApellido,
                 correo: datos.correo,
                 contrasena: datos.contrasena,
                 telefono: datos.telefono,
-                direccion: datos.direccion,
+                fechaNacimiento: datos.fechaNacimiento,
                 idCiudad: Number(datos.idCiudad),
-                fechaNacimiento: datos.fechaNacimiento
+                direccion: datos.direccion
             });
 
-            navegar('/login', { replace: true, state: { registrado: true, correo: datos.correo } });
+            navegar('/login', { replace: true, state: { registrado: true, correo: datos.correo.trim() } });
         } catch (err) {
-            setError(err.message);
+            // Si el backend marcó campos puntuales, se pintan en cada uno.
+            if (err.detalles) {
+                setErroresServidor(err.detalles);
+                setAviso('Revisa los campos marcados en rojo.');
+                enfocarPrimerError();
+            } else {
+                setAviso(err.message);
+            }
         } finally {
             setEnviando(false);
         }
     }
 
+    function enfocarPrimerError() {
+        // Se espera a que React pinte los errores antes de buscar el campo.
+        requestAnimationFrame(() => {
+            document.querySelector('.formulario [aria-invalid="true"]')?.focus();
+        });
+    }
+
     return (
         <PantallaAcceso>
-            <form className="tarjeta formulario formulario-ancho" onSubmit={enviar}>
+            <form className="tarjeta formulario formulario-ancho" onSubmit={enviar} noValidate>
                 <h1>Crea tu cuenta</h1>
                 <p className="texto-suave">El primer paso para darle un hogar a un peludito.</p>
 
                 <div className="fila">
-                    <label className="campo">
-                        Tipo de documento
-                        <select name="idTipoDocumento" value={datos.idTipoDocumento} onChange={cambiar} required>
+                    <Campo etiqueta="Tipo de documento" error={errorDe('idTipoDocumento')}>
+                        <select {...propiedades('idTipoDocumento')}>
                             <option value="">Seleccione...</option>
                             {tiposDocumento.map((tipo) => (
                                 <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
                             ))}
                         </select>
-                    </label>
+                    </Campo>
 
-                    <label className="campo">
-                        Número de documento
-                        <input name="documento" value={datos.documento} onChange={cambiar} maxLength={20} required />
-                    </label>
-                </div>
-
-                <label className="campo">
-                    Nombre completo
-                    <input name="nombre" value={datos.nombre} onChange={cambiar} maxLength={100} required />
-                </label>
-
-                <label className="campo">
-                    Correo
-                    <input type="email" name="correo" value={datos.correo} onChange={cambiar} maxLength={150} autoComplete="email" required />
-                </label>
-
-                <div className="fila">
-                    <label className="campo">
-                        Contraseña
-                        <input type="password" name="contrasena" value={datos.contrasena} onChange={cambiar} maxLength={72} autoComplete="new-password" required />
-                    </label>
-
-                    <label className="campo">
-                        Confirmar contraseña
-                        <input type="password" name="confirmacion" value={datos.confirmacion} onChange={cambiar} maxLength={72} autoComplete="new-password" required />
-                    </label>
-                </div>
-                <small className="texto-suave">Mínimo 8 caracteres, con al menos una letra y un número.</small>
-
-                <div className="fila">
-                    <label className="campo">
-                        Teléfono
-                        <input name="telefono" value={datos.telefono} onChange={cambiar} maxLength={20} required />
-                    </label>
-
-                    <label className="campo">
-                        Fecha de nacimiento
-                        <input type="date" name="fechaNacimiento" value={datos.fechaNacimiento} onChange={cambiar} required />
-                    </label>
+                    <Campo
+                        etiqueta="Número de documento"
+                        error={errorDe('documento')}
+                        ayuda={ayudaDocumento(reglaDocumento)}
+                    >
+                        <input
+                            {...propiedades('documento')}
+                            inputMode={reglaDocumento?.soloNumeros ? 'numeric' : 'text'}
+                            maxLength={25}
+                        />
+                    </Campo>
                 </div>
 
                 <div className="fila">
-                    <label className="campo">
-                        Ciudad
-                        <select name="idCiudad" value={datos.idCiudad} onChange={cambiar} required>
+                    <Campo etiqueta="Primer nombre" error={errorDe('primerNombre')}>
+                        <input {...propiedades('primerNombre')} maxLength={LARGO_MAXIMO_NOMBRE} autoComplete="given-name" />
+                    </Campo>
+
+                    <Campo etiqueta="Segundo nombre" opcional error={errorDe('segundoNombre')}>
+                        <input {...propiedades('segundoNombre')} maxLength={LARGO_MAXIMO_NOMBRE} autoComplete="additional-name" />
+                    </Campo>
+                </div>
+
+                <div className="fila">
+                    <Campo etiqueta="Primer apellido" error={errorDe('primerApellido')}>
+                        <input {...propiedades('primerApellido')} maxLength={LARGO_MAXIMO_NOMBRE} autoComplete="family-name" />
+                    </Campo>
+
+                    <Campo etiqueta="Segundo apellido" opcional error={errorDe('segundoApellido')}>
+                        <input {...propiedades('segundoApellido')} maxLength={LARGO_MAXIMO_NOMBRE} />
+                    </Campo>
+                </div>
+
+                <Campo etiqueta="Correo" error={errorDe('correo')}>
+                    <input type="email" {...propiedades('correo')} maxLength={LARGO_MAXIMO_CORREO} autoComplete="email" />
+                </Campo>
+
+                <div className="fila">
+                    <Campo etiqueta="Contraseña" error={errorDe('contrasena')}>
+                        <input
+                            type="password"
+                            {...propiedades('contrasena')}
+                            maxLength={LARGO_MAXIMO_CONTRASENA}
+                            autoComplete="new-password"
+                        />
+                    </Campo>
+
+                    <Campo etiqueta="Confirmar contraseña" error={errorDe('confirmacion')}>
+                        <input
+                            type="password"
+                            {...propiedades('confirmacion')}
+                            maxLength={LARGO_MAXIMO_CONTRASENA}
+                            autoComplete="new-password"
+                        />
+                    </Campo>
+                </div>
+
+                <RequisitosContrasena contrasena={datos.contrasena} confirmacion={datos.confirmacion} />
+
+                <div className="fila">
+                    <Campo
+                        etiqueta="Teléfono"
+                        error={errorDe('telefono')}
+                        ayuda="Celular o fijo de 10 dígitos."
+                    >
+                        <input type="tel" {...propiedades('telefono')} inputMode="tel" maxLength={16} autoComplete="tel" />
+                    </Campo>
+
+                    <Campo
+                        etiqueta="Fecha de nacimiento"
+                        error={errorDe('fechaNacimiento')}
+                        ayuda="Debes ser mayor de 18 años."
+                    >
+                        <input
+                            type="date"
+                            {...propiedades('fechaNacimiento')}
+                            min={FECHA_MINIMA}
+                            max={FECHA_MAXIMA}
+                            autoComplete="bday"
+                        />
+                    </Campo>
+                </div>
+
+                <div className="fila">
+                    <Campo etiqueta="Ciudad" error={errorDe('idCiudad')}>
+                        <select {...propiedades('idCiudad')}>
                             <option value="">Seleccione...</option>
                             {ciudades.map((ciudad) => (
                                 <option key={ciudad.id} value={ciudad.id}>{ciudad.nombre}</option>
                             ))}
                         </select>
-                    </label>
+                    </Campo>
 
-                    <label className="campo">
-                        Dirección
-                        <input name="direccion" value={datos.direccion} onChange={cambiar} maxLength={200} required />
-                    </label>
+                    <Campo etiqueta="Dirección" error={errorDe('direccion')}>
+                        <input {...propiedades('direccion')} maxLength={LARGO_MAXIMO_DIRECCION} autoComplete="street-address" />
+                    </Campo>
                 </div>
 
-                {error && <p className="aviso aviso-error">{error}</p>}
+                {aviso && <p className="aviso aviso-error">{aviso}</p>}
 
                 <button type="submit" className="boton" disabled={enviando}>
                     {enviando ? 'Creando cuenta...' : 'Crear cuenta'}

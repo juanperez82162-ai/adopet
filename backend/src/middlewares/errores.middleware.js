@@ -3,7 +3,7 @@ import { error } from '../utils/respuesta.js';
 
 export function manejarErrores(err, req, res, next) {
     if (err instanceof ErrorNegocio) {
-        return error(res, err.codigoHttp, err.codigo, err.message);
+        return error(res, err.codigoHttp, err.codigo, err.message, err.detalles);
     }
 
     if (err.type === 'entity.parse.failed') {

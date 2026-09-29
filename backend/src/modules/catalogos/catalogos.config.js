@@ -11,12 +11,15 @@
 // niveles:           qué significa cada nivel en ese catálogo.
 // conOtro:           tiene la opción "Otro" (ES_OTRO), que habilita texto
 //                    libre en el cuestionario.
+// conReglasDocumento: tiene SOLO_NUMEROS, LARGO_MINIMO y LARGO_MAXIMO, que
+//                    validan el número de documento en el registro.
 
 export const CATALOGOS = {
     'tipos-documento': {
         etiqueta: 'Tipos de documento',
         tabla: 'TIPOS_DOCUMENTO', columnaId: 'ID_TIPO_DOCUMENTO', largoNombre: 15,
-        permiteCrear: true, permiteDesactivar: true
+        permiteCrear: true, permiteDesactivar: true,
+        conReglasDocumento: true
     },
     'ciudades': {
         etiqueta: 'Ciudades',

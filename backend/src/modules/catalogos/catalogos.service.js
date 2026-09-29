@@ -65,6 +65,12 @@ function aValor(catalogo, fila, incluirActivo) {
         valor.esOtro = fila.ES_OTRO === 'S';
     }
 
+    if (catalogo.conReglasDocumento) {
+        valor.soloNumeros = fila.SOLO_NUMEROS === 'S';
+        valor.largoMinimo = fila.LARGO_MINIMO;
+        valor.largoMaximo = fila.LARGO_MAXIMO;
+    }
+
     return valor;
 }
 

@@ -79,26 +79,41 @@ export async function buscarIdPerfil(nombrePerfil) {
     }
 }
 
-export async function verificarCatalogosRegistro(idTipoDocumento, idCiudad) {
+// Trae la regla de formato del tipo de documento y confirma que la
+// ciudad exista. Ambos deben estar activos.
+export async function buscarReglasRegistro(idTipoDocumento, idCiudad) {
     let conexion;
 
     try {
         conexion = await obtenerConexion();
 
-        const resultado = await conexion.execute(
-            `SELECT (SELECT COUNT(*) FROM TIPOS_DOCUMENTO
-                      WHERE ID_TIPO_DOCUMENTO = :idTipoDocumento AND ACTIVO = 'S') AS TIPO_DOCUMENTO_OK,
-                    (SELECT COUNT(*) FROM CIUDADES
-                      WHERE ID_CIUDAD = :idCiudad AND ACTIVO = 'S') AS CIUDAD_OK
-               FROM DUAL`,
-            { idTipoDocumento, idCiudad }
+        const tipo = await conexion.execute(
+            `SELECT SOLO_NUMEROS, LARGO_MINIMO, LARGO_MAXIMO
+               FROM TIPOS_DOCUMENTO
+              WHERE ID_TIPO_DOCUMENTO = :idTipoDocumento
+                AND ACTIVO = 'S'`,
+            { idTipoDocumento }
         );
 
-        const fila = resultado.rows[0];
+        const ciudad = await conexion.execute(
+            `SELECT COUNT(*) AS TOTAL
+               FROM CIUDADES
+              WHERE ID_CIUDAD = :idCiudad
+                AND ACTIVO = 'S'`,
+            { idCiudad }
+        );
+
+        const fila = tipo.rows[0];
 
         return {
-            tipoDocumentoValido: fila.TIPO_DOCUMENTO_OK === 1,
-            ciudadValida: fila.CIUDAD_OK === 1
+            reglaDocumento: fila
+                ? {
+                    soloNumeros: fila.SOLO_NUMEROS === 'S',
+                    largoMinimo: fila.LARGO_MINIMO,
+                    largoMaximo: fila.LARGO_MAXIMO
+                }
+                : null,
+            ciudadValida: ciudad.rows[0].TOTAL === 1
         };
     } finally {
         if (conexion) {
@@ -115,10 +130,14 @@ export async function insertarUsuario(usuario) {
 
         await conexion.execute(
             `INSERT INTO USUARIOS (
-                 DOCUMENTO, ID_PERFIL, NOMBRE, CORREO, CONTRASENA_HASH,
+                 DOCUMENTO, ID_PERFIL,
+                 PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO,
+                 CORREO, CONTRASENA_HASH,
                  ID_TIPO_DOCUMENTO, TELEFONO, DIRECCION, ID_CIUDAD, FECHA_NACIMIENTO
              ) VALUES (
-                 :documento, :idPerfil, :nombre, :correo, :contrasenaHash,
+                 :documento, :idPerfil,
+                 :primerNombre, :segundoNombre, :primerApellido, :segundoApellido,
+                 :correo, :contrasenaHash,
                  :idTipoDocumento, :telefono, :direccion, :idCiudad,
                  TO_DATE(:fechaNacimiento, 'YYYY-MM-DD')
              )`,
@@ -139,7 +158,7 @@ export async function buscarUsuarioPorCorreo(correo) {
         conexion = await obtenerConexion();
 
         const resultado = await conexion.execute(
-            `SELECT u.DOCUMENTO, u.NOMBRE, u.CORREO, u.CONTRASENA_HASH, u.ACTIVO,
+            `SELECT u.DOCUMENTO, u.PRIMER_NOMBRE, u.PRIMER_APELLIDO, u.CORREO, u.CONTRASENA_HASH, u.ACTIVO,
                     u.ID_PERFIL, p.NOMBRE_PERFIL, r.NOMBRE_ROL
                FROM USUARIOS u
                JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL
@@ -155,6 +174,7 @@ export async function buscarUsuarioPorCorreo(correo) {
         }
     }
 }
+
 export async function buscarUsuarioPorDocumento(documento) {
     let conexion;
 
@@ -162,7 +182,7 @@ export async function buscarUsuarioPorDocumento(documento) {
         conexion = await obtenerConexion();
 
         const resultado = await conexion.execute(
-            `SELECT DOCUMENTO, NOMBRE, CORREO, CONTRASENA_HASH, ACTIVO
+            `SELECT DOCUMENTO, PRIMER_NOMBRE, PRIMER_APELLIDO, CORREO, CONTRASENA_HASH, ACTIVO
                FROM USUARIOS
               WHERE DOCUMENTO = :documento`,
             { documento }

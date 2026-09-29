@@ -8,9 +8,10 @@ import {
 import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 
+// El registro no valida aquí: el servicio limpia y valida todos los
+// campos, para que el script crear-admin pase por las mismas reglas.
 export async function registro(req, res) {
-    const datos = validarDatosRegistro(req.body);
-    const usuario = await registrar(datos);
+    const usuario = await registrar(req.body ?? {});
     return exito(res, usuario, 201);
 }
 
@@ -56,38 +57,6 @@ export async function restablecer(req, res) {
     return exito(res, { mensaje: 'Tu contraseña se cambió. Ya puedes iniciar sesión.' });
 }
 
-function validarDatosRegistro(cuerpo = {}) {
-    const texto = (valor) => (typeof valor === 'string' ? valor.trim() : '');
-
-    const datos = {
-        documento: texto(cuerpo.documento),
-        idTipoDocumento: Number(cuerpo.idTipoDocumento),
-        nombre: texto(cuerpo.nombre),
-        correo: texto(cuerpo.correo),
-        contrasena: typeof cuerpo.contrasena === 'string' ? cuerpo.contrasena : '',
-        telefono: texto(cuerpo.telefono),
-        direccion: texto(cuerpo.direccion),
-        idCiudad: Number(cuerpo.idCiudad),
-        fechaNacimiento: texto(cuerpo.fechaNacimiento)
-    };
-
-    const reglas = [
-        [/^[A-Za-z0-9]{5,20}$/.test(datos.documento), 'documento: solo letras y números, entre 5 y 20 caracteres'],
-        [Number.isInteger(datos.idTipoDocumento) && datos.idTipoDocumento > 0, 'idTipoDocumento: es obligatorio'],
-        [datos.nombre.length > 0 && datos.nombre.length <= 100, 'nombre: obligatorio, máximo 100 caracteres'],
-        [/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.correo) && datos.correo.length <= 150, 'correo: no tiene un formato válido'],
-        [datos.contrasena.length > 0 && datos.contrasena.length <= 72, 'contrasena: obligatoria, máximo 72 caracteres'],
-        [/^[0-9+ ]{7,20}$/.test(datos.telefono), 'telefono: solo números, entre 7 y 20 caracteres'],
-        [datos.direccion.length > 0 && datos.direccion.length <= 200, 'direccion: obligatoria, máximo 200 caracteres'],
-        [Number.isInteger(datos.idCiudad) && datos.idCiudad > 0, 'idCiudad: es obligatoria'],
-        [esFechaValida(datos.fechaNacimiento), 'fechaNacimiento: debe tener el formato AAAA-MM-DD']
-    ];
-
-    lanzarSiHayErrores(reglas);
-
-    return datos;
-}
-
 function validarDatosLogin(cuerpo = {}) {
     const correo = typeof cuerpo.correo === 'string' ? cuerpo.correo.trim() : '';
     const contrasena = typeof cuerpo.contrasena === 'string' ? cuerpo.contrasena : '';
@@ -108,13 +77,4 @@ function lanzarSiHayErrores(reglas) {
     if (errores.length > 0) {
         throw new ErrorNegocio(400, 'DATOS_INVALIDOS', errores.join('; '));
     }
-}
-
-function esFechaValida(fecha) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        return false;
-    }
-
-    const convertida = new Date(`${fecha}T00:00:00`);
-    return !Number.isNaN(convertida.getTime()) && convertida.toISOString().startsWith(fecha);
 }

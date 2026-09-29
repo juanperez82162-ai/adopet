@@ -19,6 +19,10 @@ function columnasExtra(catalogo) {
         columnas.push('ES_OTRO');
     }
 
+    if (catalogo.conReglasDocumento) {
+        columnas.push('SOLO_NUMEROS', 'LARGO_MINIMO', 'LARGO_MAXIMO');
+    }
+
     return columnas.length > 0 ? `, ${columnas.join(', ')}` : '';
 }
 

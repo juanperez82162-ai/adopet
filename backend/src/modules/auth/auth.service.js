@@ -6,16 +6,21 @@ import {
     buscarPermiso,
     buscarMenu,
     buscarIdPerfil,
-    verificarCatalogosRegistro,
+    buscarReglasRegistro,
     insertarUsuario,
     buscarUsuarioPorCorreo,
     buscarUsuarioPorDocumento,
     actualizarContrasena
 } from './auth.repository.js';
 import { enviarCorreo } from '../../utils/correo.js';
+import {
+    normalizarUsuario,
+    erroresFormatoUsuario,
+    errorDocumento,
+    errorContrasena
+} from './auth.validaciones.js';
 
 const ACCIONES = ['CONSULTAR', 'CREAR', 'MODIFICAR', 'ELIMINAR'];
-const EDAD_MINIMA = 18;
 const RONDAS_BCRYPT = 10;
 const PROPOSITO_RECUPERAR = 'recuperar-contrasena';
 const VIGENCIA_ENLACE = '15m';
@@ -58,26 +63,41 @@ export async function obtenerMenu(documento) {
     }));
 }
 
-export async function registrar(datos) {
-    return crearUsuario(datos, 'Adoptante');
+// cuerpo: los datos tal como llegan (del formulario o del script).
+// Aquí se limpian y se validan TODOS, sin importar quién llame.
+export async function registrar(cuerpo) {
+    return crearUsuario(cuerpo, 'Adoptante');
 }
 
-export async function crearAdministrador(datos) {
-    return crearUsuario(datos, 'Admin');
+export async function crearAdministrador(cuerpo) {
+    return crearUsuario(cuerpo, 'Admin');
 }
 
-async function crearUsuario(datos, nombrePerfil) {
-    validarContrasena(datos.contrasena);
-    validarMayoriaEdad(datos.fechaNacimiento);
+async function crearUsuario(cuerpo, nombrePerfil) {
+    const datos = normalizarUsuario(cuerpo);
+    const errores = erroresFormatoUsuario(datos);
 
-    const catalogos = await verificarCatalogosRegistro(datos.idTipoDocumento, datos.idCiudad);
+    const { reglaDocumento, ciudadValida } = await buscarReglasRegistro(
+        datos.idTipoDocumento || 0,
+        datos.idCiudad || 0
+    );
 
-    if (!catalogos.tipoDocumentoValido) {
-        throw new ErrorNegocio(400, 'TIPO_DOCUMENTO_INVALIDO', 'El tipo de documento no es válido.');
+    if (!errores.idTipoDocumento && !reglaDocumento) {
+        errores.idTipoDocumento = 'El tipo de documento no es válido.';
     }
 
-    if (!catalogos.ciudadValida) {
-        throw new ErrorNegocio(400, 'CIUDAD_INVALIDA', 'La ciudad no es válida.');
+    const mensajeDocumento = errorDocumento(datos.documento, reglaDocumento);
+
+    if (mensajeDocumento) {
+        errores.documento = mensajeDocumento;
+    }
+
+    if (!errores.idCiudad && !ciudadValida) {
+        errores.idCiudad = 'La ciudad no es válida.';
+    }
+
+    if (Object.keys(errores).length > 0) {
+        throw new ErrorNegocio(400, 'DATOS_INVALIDOS', 'Revisa los campos marcados.', errores);
     }
 
     const idPerfil = await buscarIdPerfil(nombrePerfil);
@@ -92,8 +112,11 @@ async function crearUsuario(datos, nombrePerfil) {
         await insertarUsuario({
             documento: datos.documento,
             idPerfil,
-            nombre: datos.nombre,
-            correo: datos.correo.toLowerCase(),
+            primerNombre: datos.primerNombre,
+            segundoNombre: datos.segundoNombre,
+            primerApellido: datos.primerApellido,
+            segundoApellido: datos.segundoApellido,
+            correo: datos.correo,
             contrasenaHash,
             idTipoDocumento: datos.idTipoDocumento,
             telefono: datos.telefono,
@@ -108,8 +131,8 @@ async function crearUsuario(datos, nombrePerfil) {
 
     return {
         documento: datos.documento,
-        nombre: datos.nombre,
-        correo: datos.correo.toLowerCase(),
+        nombre: `${datos.primerNombre} ${datos.primerApellido}`,
+        correo: datos.correo,
         perfil: nombrePerfil
     };
 }
@@ -128,9 +151,11 @@ export async function iniciarSesion(correo, contrasena) {
         throw new ErrorNegocio(403, 'USUARIO_INACTIVO', 'La cuenta está desactivada. Comuníquese con la fundación.');
     }
 
+    const nombre = `${usuario.PRIMER_NOMBRE} ${usuario.PRIMER_APELLIDO}`;
+
     const datosToken = {
         documento: usuario.DOCUMENTO,
-        nombre: usuario.NOMBRE,
+        nombre,
         idPerfil: usuario.ID_PERFIL,
         rol: usuario.NOMBRE_ROL
     };
@@ -141,7 +166,8 @@ export async function iniciarSesion(correo, contrasena) {
         token,
         usuario: {
             documento: usuario.DOCUMENTO,
-            nombre: usuario.NOMBRE,
+            nombre,
+            primerNombre: usuario.PRIMER_NOMBRE,
             correo: usuario.CORREO,
             perfil: usuario.NOMBRE_PERFIL,
             rol: usuario.NOMBRE_ROL
@@ -174,7 +200,7 @@ export async function solicitarRecuperacion(correo) {
     );
 
     const enlace = `${config.frontendUrl}/restablecer?token=${encodeURIComponent(token)}`;
-    const primerNombre = usuario.NOMBRE.split(' ')[0];
+    const primerNombre = usuario.PRIMER_NOMBRE;
 
     await enviarCorreo({
         para: usuario.CORREO,
@@ -246,34 +272,10 @@ function plantillaCorreoRecuperacion(nombre, enlace) {
 }
 
 function validarContrasena(contrasena) {
-    const cumple = contrasena.length >= 8
-        && /[A-Za-z]/.test(contrasena)
-        && /[0-9]/.test(contrasena);
+    const mensaje = errorContrasena(contrasena);
 
-    if (!cumple) {
-        throw new ErrorNegocio(
-            400,
-            'CONTRASENA_DEBIL',
-            'La contraseña debe tener al menos 8 caracteres, con al menos una letra y un número.'
-        );
-    }
-}
-
-function validarMayoriaEdad(fechaNacimiento) {
-    const nacimiento = new Date(`${fechaNacimiento}T00:00:00`);
-    const hoy = new Date();
-
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const aunNoCumple =
-        hoy.getMonth() < nacimiento.getMonth() ||
-        (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate());
-
-    if (aunNoCumple) {
-        edad--;
-    }
-
-    if (edad < EDAD_MINIMA) {
-        throw new ErrorNegocio(400, 'MENOR_DE_EDAD', 'Debe ser mayor de 18 años para registrarse.');
+    if (mensaje) {
+        throw new ErrorNegocio(400, 'CONTRASENA_DEBIL', mensaje, { contrasena: mensaje });
     }
 }
 
@@ -283,10 +285,12 @@ function traducirDuplicado(err) {
     }
 
     if (err.message.includes('PK_USUARIOS')) {
-        throw new ErrorNegocio(409, 'DOCUMENTO_REGISTRADO', 'Ya existe una cuenta con ese documento.');
+        throw new ErrorNegocio(409, 'DOCUMENTO_REGISTRADO', 'Ya existe una cuenta con ese documento.',
+            { documento: 'Ya existe una cuenta con este documento.' });
     }
 
     if (err.message.includes('UX_USUARIOS_CORREO_LOWER')) {
-        throw new ErrorNegocio(409, 'CORREO_REGISTRADO', 'Ya existe una cuenta con ese correo.');
+        throw new ErrorNegocio(409, 'CORREO_REGISTRADO', 'Ya existe una cuenta con ese correo.',
+            { correo: 'Ya existe una cuenta con este correo.' });
     }
 }

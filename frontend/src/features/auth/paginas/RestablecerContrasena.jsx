@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { restablecerContrasena } from '../auth.api.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
+import { Campo } from '../../../componentes/Campo.jsx';
+import { RequisitosContrasena } from '../componentes/RequisitosContrasena.jsx';
+import { errorContrasena, errorConfirmacion, LARGO_MAXIMO_CONTRASENA } from '../validaciones.js';
 
 export function RestablecerContrasena() {
     const navegar = useNavigate();
@@ -11,14 +14,18 @@ export function RestablecerContrasena() {
     const [contrasena, setContrasena] = useState('');
     const [confirmacion, setConfirmacion] = useState('');
     const [error, setError] = useState('');
+    const [intentoEnviar, setIntentoEnviar] = useState(false);
     const [enviando, setEnviando] = useState(false);
+
+    const errorClave = intentoEnviar ? errorContrasena(contrasena) : null;
+    const errorRepetir = (intentoEnviar || confirmacion) ? errorConfirmacion(contrasena, confirmacion) : null;
 
     async function enviar(evento) {
         evento.preventDefault();
         setError('');
+        setIntentoEnviar(true);
 
-        if (contrasena !== confirmacion) {
-            setError('Las contraseñas no coinciden.');
+        if (errorContrasena(contrasena) || errorConfirmacion(contrasena, confirmacion)) {
             return;
         }
 
@@ -48,33 +55,32 @@ export function RestablecerContrasena() {
 
     return (
         <PantallaAcceso>
-            <form className="tarjeta formulario" onSubmit={enviar}>
+            <form className="tarjeta formulario" onSubmit={enviar} noValidate>
                 <h1>Crea tu nueva contraseña</h1>
-                <p className="texto-suave">Mínimo 8 caracteres, con al menos una letra y un número.</p>
 
-                <label className="campo">
-                    Nueva contraseña
+                <Campo etiqueta="Nueva contraseña" error={errorClave}>
                     <input
                         type="password"
                         value={contrasena}
                         onChange={(e) => setContrasena(e.target.value)}
-                        maxLength={72}
+                        maxLength={LARGO_MAXIMO_CONTRASENA}
                         autoComplete="new-password"
-                        required
+                        aria-invalid={errorClave ? 'true' : 'false'}
                     />
-                </label>
+                </Campo>
 
-                <label className="campo">
-                    Confirmar contraseña
+                <Campo etiqueta="Confirmar contraseña" error={errorRepetir}>
                     <input
                         type="password"
                         value={confirmacion}
                         onChange={(e) => setConfirmacion(e.target.value)}
-                        maxLength={72}
+                        maxLength={LARGO_MAXIMO_CONTRASENA}
                         autoComplete="new-password"
-                        required
+                        aria-invalid={errorRepetir ? 'true' : 'false'}
                     />
-                </label>
+                </Campo>
+
+                <RequisitosContrasena contrasena={contrasena} confirmacion={confirmacion} />
 
                 {error && (
                     <p className="aviso aviso-error">

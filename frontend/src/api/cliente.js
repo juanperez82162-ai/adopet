@@ -8,12 +8,14 @@ const CLAVE_USUARIO = 'adopet_usuario';
 
 export const EVENTO_SESION_EXPIRADA = 'adopet:sesion-expirada';
 
+// detalles: { campo: mensaje } cuando el backend marca campos puntuales.
 export class ErrorApi extends Error {
-    constructor(codigo, mensaje, estadoHttp) {
+    constructor(codigo, mensaje, estadoHttp, detalles = null) {
         super(mensaje);
         this.name = 'ErrorApi';
         this.codigo = codigo;
         this.estadoHttp = estadoHttp;
+        this.detalles = detalles;
     }
 }
 
@@ -99,7 +101,8 @@ export async function peticion(ruta, { metodo = 'GET', cuerpo } = {}) {
         throw new ErrorApi(
             json.error?.codigo || 'ERROR_DESCONOCIDO',
             json.error?.mensaje || 'Ocurrió un error inesperado.',
-            respuesta.status
+            respuesta.status,
+            json.error?.detalles || null
         );
     }
 
