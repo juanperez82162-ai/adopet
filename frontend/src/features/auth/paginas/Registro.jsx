@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registrar } from '../auth.api.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
+import { useFormulario, enfocarPrimerError } from '../../../hooks/useFormulario.js';
 import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
 import { Campo } from '../../../componentes/Campo.jsx';
 import { InputContrasena } from '../../../componentes/InputContrasena.jsx';
@@ -40,18 +41,30 @@ const FECHA_MINIMA = fechaHaceAnios(EDAD_MAXIMA);
 
 export function Registro() {
     const navegar = useNavigate();
+    const referencia = useRef(null);
 
-    const [datos, setDatos] = useState(FORMULARIO_VACIO);
     const [tiposDocumento, setTiposDocumento] = useState([]);
     const [ciudades, setCiudades] = useState([]);
-
-    // tocados: campos de los que el usuario ya salió (ahí se muestran errores).
-    // intentoEnviar: al pulsar "Crear cuenta" se muestran todos.
-    const [tocados, setTocados] = useState({});
-    const [intentoEnviar, setIntentoEnviar] = useState(false);
-    const [erroresServidor, setErroresServidor] = useState({});
     const [aviso, setAviso] = useState('');
     const [enviando, setEnviando] = useState(false);
+
+    // El documento se valida con las reglas del tipo elegido (solo números,
+    // largo mínimo y máximo), que vienen de la base junto con el catálogo.
+    function reglaDe(idTipoDocumento) {
+        return tiposDocumento.find((tipo) => String(tipo.id) === idTipoDocumento) || null;
+    }
+
+    // useFormulario maneja los valores, los campos tocados, los errores
+    // locales y los del servidor (ver hooks/useFormulario.js).
+    const formulario = useFormulario(
+        FORMULARIO_VACIO,
+        (valores) => validarRegistro(valores, reglaDe(valores.idTipoDocumento))
+    );
+    const { datos, propiedades, errorDe } = formulario;
+    const reglaDocumento = reglaDe(datos.idTipoDocumento);
+
+    // La confirmación avisa en vivo desde la primera letra.
+    const confirmacionEnVivo = datos.confirmacion !== '';
 
     // Las listas salen de la base (catálogos activos), no del código.
     useEffect(() => {
@@ -63,52 +76,14 @@ export function Registro() {
             .catch((err) => setAviso(err.message));
     }, []);
 
-    const reglaDocumento = tiposDocumento.find((tipo) => String(tipo.id) === datos.idTipoDocumento) || null;
-    const errores = validarRegistro(datos, reglaDocumento);
-
-    // El error que se ve: primero el del servidor; si no, el local,
-    // pero solo cuando el campo ya se tocó o se intentó enviar.
-    function errorDe(campo) {
-        if (erroresServidor[campo]) {
-            return erroresServidor[campo];
-        }
-
-        // La confirmación avisa en vivo desde la primera letra.
-        const enVivo = campo === 'confirmacion' && datos.confirmacion !== '';
-
-        return (tocados[campo] || intentoEnviar || enVivo) ? errores[campo] : undefined;
-    }
-
-    function propiedades(campo) {
-        return {
-            name: campo,
-            value: datos[campo],
-            onChange: cambiar,
-            onBlur: salir,
-            'aria-invalid': errorDe(campo) ? 'true' : 'false'
-        };
-    }
-
-    function cambiar(evento) {
-        const { name, value } = evento.target;
-        setDatos((anterior) => ({ ...anterior, [name]: value }));
-        setErroresServidor((anterior) => ({ ...anterior, [name]: undefined }));
-        setAviso('');
-    }
-
-    function salir(evento) {
-        const { name } = evento.target;
-        setTocados((anterior) => ({ ...anterior, [name]: true }));
-    }
-
     async function enviar(evento) {
         evento.preventDefault();
-        setIntentoEnviar(true);
+        formulario.marcarIntento();
         setAviso('');
 
-        if (Object.keys(errores).length > 0) {
+        if (formulario.hayErrores) {
             setAviso('Revisa los campos marcados en rojo.');
-            enfocarPrimerError();
+            enfocarPrimerError(referencia.current);
             return;
         }
 
@@ -135,9 +110,9 @@ export function Registro() {
         } catch (err) {
             // Si el backend marcó campos puntuales, se pintan en cada uno.
             if (err.detalles) {
-                setErroresServidor(err.detalles);
+                formulario.marcarErroresServidor(err.detalles);
                 setAviso('Revisa los campos marcados en rojo.');
-                enfocarPrimerError();
+                enfocarPrimerError(referencia.current);
             } else {
                 setAviso(err.message);
             }
@@ -146,16 +121,17 @@ export function Registro() {
         }
     }
 
-    function enfocarPrimerError() {
-        // Se espera a que React pinte los errores antes de buscar el campo.
-        requestAnimationFrame(() => {
-            document.querySelector('.formulario [aria-invalid="true"]')?.focus();
-        });
-    }
-
+    // onChange en el <form>: cualquier cambio en un campo sube hasta aquí
+    // y borra el aviso general, sin tocar el hook.
     return (
         <PantallaAcceso>
-            <form className="tarjeta formulario formulario-ancho" onSubmit={enviar} noValidate>
+            <form
+                ref={referencia}
+                className="tarjeta formulario formulario-ancho"
+                onSubmit={enviar}
+                onChange={() => setAviso('')}
+                noValidate
+            >
                 <h1>Crea tu cuenta</h1>
                 <p className="texto-suave">El primer paso para darle un hogar a un peludito.</p>
 
@@ -215,9 +191,9 @@ export function Registro() {
                         />
                     </Campo>
 
-                    <Campo etiqueta="Confirmar contraseña" error={errorDe('confirmacion')}>
+                    <Campo etiqueta="Confirmar contraseña" error={errorDe('confirmacion', confirmacionEnVivo)}>
                         <InputContrasena
-                            {...propiedades('confirmacion')}
+                            {...propiedades('confirmacion', confirmacionEnVivo)}
                             maxLength={LARGO_MAXIMO_CONTRASENA}
                             autoComplete="new-password"
                         />
