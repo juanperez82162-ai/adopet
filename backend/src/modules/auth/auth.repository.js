@@ -102,3 +102,27 @@ export async function insertarUsuario(usuario) {
         }
     }
 }
+
+export async function buscarUsuarioPorCorreo(correo) {
+    let conexion;
+
+    try {
+        conexion = await obtenerConexion();
+
+        const resultado = await conexion.execute(
+            `SELECT u.DOCUMENTO, u.NOMBRE, u.CORREO, u.CONTRASENA_HASH, u.ACTIVO,
+                    u.ID_PERFIL, p.NOMBRE_PERFIL, r.NOMBRE_ROL
+               FROM USUARIOS u
+               JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL
+               JOIN ROLES r    ON r.ID_ROL    = p.ID_ROL
+              WHERE LOWER(u.CORREO) = LOWER(:correo)`,
+            { correo }
+        );
+
+        return resultado.rows[0] || null;
+    } finally {
+        if (conexion) {
+            await conexion.close();
+        }
+    }
+}

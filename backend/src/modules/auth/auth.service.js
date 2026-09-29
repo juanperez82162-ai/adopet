@@ -1,15 +1,22 @@
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { config } from '../../config/env.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 import {
     buscarPermiso,
     buscarIdPerfil,
     verificarCatalogosRegistro,
-    insertarUsuario
+    insertarUsuario,
+    buscarUsuarioPorCorreo
 } from './auth.repository.js';
 
 const ACCIONES = ['CONSULTAR', 'CREAR', 'MODIFICAR', 'ELIMINAR'];
 const EDAD_MINIMA = 18;
 const RONDAS_BCRYPT = 10;
+
+// Hash de relleno: se compara contra él cuando el correo no existe,
+// para que la respuesta tarde lo mismo exista o no el usuario.
+const HASH_FICTICIO = bcrypt.hashSync('adopet-usuario-inexistente', RONDAS_BCRYPT);
 
 export async function tienePermiso(documento, nombreOpcion, accion) {
     if (!ACCIONES.includes(accion)) {
@@ -73,6 +80,41 @@ export async function registrar(datos) {
         documento: datos.documento,
         nombre: datos.nombre,
         correo: datos.correo.toLowerCase()
+    };
+}
+
+export async function iniciarSesion(correo, contrasena) {
+    const usuario = await buscarUsuarioPorCorreo(correo);
+
+    const hashAComparar = usuario ? usuario.CONTRASENA_HASH : HASH_FICTICIO;
+    const contrasenaCorrecta = await bcrypt.compare(contrasena, hashAComparar);
+
+    if (!usuario || !contrasenaCorrecta) {
+        throw new ErrorNegocio(401, 'CREDENCIALES_INVALIDAS', 'Correo o contraseña incorrectos.');
+    }
+
+    if (usuario.ACTIVO !== 'S') {
+        throw new ErrorNegocio(403, 'USUARIO_INACTIVO', 'La cuenta está desactivada. Comuníquese con la fundación.');
+    }
+
+    const datosToken = {
+        documento: usuario.DOCUMENTO,
+        nombre: usuario.NOMBRE,
+        idPerfil: usuario.ID_PERFIL,
+        rol: usuario.NOMBRE_ROL
+    };
+
+    const token = jwt.sign(datosToken, config.jwt.secreto, { expiresIn: config.jwt.expira });
+
+    return {
+        token,
+        usuario: {
+            documento: usuario.DOCUMENTO,
+            nombre: usuario.NOMBRE,
+            correo: usuario.CORREO,
+            perfil: usuario.NOMBRE_PERFIL,
+            rol: usuario.NOMBRE_ROL
+        }
     };
 }
 

@@ -1,4 +1,4 @@
-import { registrar } from './auth.service.js';
+import { registrar, iniciarSesion } from './auth.service.js';
 import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 
@@ -6,6 +6,12 @@ export async function registro(req, res) {
     const datos = validarDatosRegistro(req.body);
     const usuario = await registrar(datos);
     return exito(res, usuario, 201);
+}
+
+export async function login(req, res) {
+    const { correo, contrasena } = validarDatosLogin(req.body);
+    const sesion = await iniciarSesion(correo, contrasena);
+    return exito(res, sesion);
 }
 
 function validarDatosRegistro(cuerpo = {}) {
@@ -35,13 +41,31 @@ function validarDatosRegistro(cuerpo = {}) {
         [esFechaValida(datos.fechaNacimiento), 'fechaNacimiento: debe tener el formato AAAA-MM-DD']
     ];
 
+    lanzarSiHayErrores(reglas);
+
+    return datos;
+}
+
+function validarDatosLogin(cuerpo = {}) {
+    const correo = typeof cuerpo.correo === 'string' ? cuerpo.correo.trim() : '';
+    const contrasena = typeof cuerpo.contrasena === 'string' ? cuerpo.contrasena : '';
+
+    const reglas = [
+        [correo.length > 0, 'correo: es obligatorio'],
+        [contrasena.length > 0, 'contrasena: es obligatoria']
+    ];
+
+    lanzarSiHayErrores(reglas);
+
+    return { correo, contrasena };
+}
+
+function lanzarSiHayErrores(reglas) {
     const errores = reglas.filter(([cumple]) => !cumple).map(([, mensaje]) => mensaje);
 
     if (errores.length > 0) {
         throw new ErrorNegocio(400, 'DATOS_INVALIDOS', errores.join('; '));
     }
-
-    return datos;
 }
 
 function esFechaValida(fecha) {
