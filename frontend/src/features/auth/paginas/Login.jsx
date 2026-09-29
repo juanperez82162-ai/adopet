@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
+import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
 
 export function Login() {
     const { iniciarSesion } = useSesion();
@@ -28,10 +29,10 @@ export function Login() {
     }
 
     return (
-        <div className="pagina-acceso">
+        <PantallaAcceso>
             <form className="tarjeta formulario" onSubmit={enviar}>
-                <h1 className="marca-grande">ADOPET</h1>
-                <p className="texto-suave">Fundación Bello Animal</p>
+                <h1>Bienvenido de nuevo</h1>
+                <p className="texto-suave">Inicia sesión para continuar.</p>
 
                 {state?.registrado && (
                     <p className="aviso aviso-exito">Cuenta creada. Ya puede iniciar sesión.</p>
@@ -69,6 +70,6 @@ export function Login() {
                     ¿No tiene cuenta? <Link to="/registro">Regístrese</Link>
                 </p>
             </form>
-        </div>
+        </PantallaAcceso>
     );
 }

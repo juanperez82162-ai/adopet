@@ -1,6 +1,7 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useSesion } from '../hooks/useSesion.js';
 import { Menu } from './Menu.jsx';
+import { Logo } from './Logo.jsx';
 
 // Estructura común de todas las pantallas con sesión:
 // encabezado arriba, menú a la izquierda y el contenido de la página.
@@ -13,13 +14,17 @@ export function Plantilla() {
         navegar('/login', { replace: true });
     }
 
+    const inicial = usuario.nombre?.trim().charAt(0).toUpperCase() || '?';
+
     return (
         <div className="plantilla">
             <header className="encabezado">
-                <span className="marca">ADOPET</span>
+                <Logo />
                 <div className="encabezado-usuario">
-                    <span>
-                        {usuario.nombre} · <small>{usuario.perfil}</small>
+                    <span className="avatar" aria-hidden="true">{inicial}</span>
+                    <span className="encabezado-datos">
+                        <strong>{usuario.nombre}</strong>
+                        <small>{usuario.perfil}</small>
                     </span>
                     <button type="button" className="boton boton-secundario" onClick={salir}>
                         Cerrar sesión

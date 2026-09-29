@@ -1,21 +1,36 @@
-/* ADOPET - estilos base. Funcional y limpio; el diseño final vendrá después. */
+/* =====================================================================
+   ADOPET — Sistema visual "Cálido y amigable"
+   Todo color, radio y sombra sale de estas variables: para ajustar el
+   estilo de toda la aplicación se cambia aquí, no en cada pantalla.
+   ===================================================================== */
 
 :root {
-    --color-primario: #c2410c;
-    --color-primario-oscuro: #9a3412;
-    --color-fondo: #faf7f5;
-    --color-superficie: #ffffff;
-    --color-borde: #e7ded8;
-    --color-texto: #2b2521;
-    --color-texto-suave: #7a6f68;
-    --color-exito: #15803d;
-    --color-error: #b91c1c;
-    --radio: 10px;
-    --sombra: 0 1px 3px rgba(43, 37, 33, 0.08);
+    /* Colores */
+    --naranja: #e8743b;
+    --naranja-oscuro: #c85c26;
+    --naranja-suave: #fde6d6;
+    --salvia: #7fa36b;
+    --salvia-suave: #e6efdf;
+    --crema: #fff8f0;
+    --arena: #f6ebdf;
+    --blanco: #ffffff;
+    --cafe: #3d2c22;
+    --cafe-suave: #806a5c;
+    --borde: #eedfd1;
+    --error: #c0392b;
+    --error-suave: #fdecea;
 
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    color: var(--color-texto);
-    background: var(--color-fondo);
+    /* Formas */
+    --radio-sm: 10px;
+    --radio: 18px;
+    --radio-lg: 28px;
+    --sombra: 0 2px 6px rgba(61, 44, 34, 0.06), 0 8px 24px rgba(61, 44, 34, 0.06);
+    --sombra-hover: 0 4px 10px rgba(61, 44, 34, 0.08), 0 14px 32px rgba(232, 116, 59, 0.16);
+
+    font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--cafe);
+    background: var(--crema);
+    -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -27,51 +42,90 @@ body {
     min-height: 100vh;
 }
 
+h1,
+h2 {
+    margin: 0 0 0.4rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
 h1 {
-    margin: 0 0 0.5rem;
-    font-size: 1.5rem;
+    font-size: 1.7rem;
 }
 
 a {
-    color: var(--color-primario);
+    color: var(--naranja-oscuro);
+    font-weight: 700;
 }
 
-/* ---- Tarjetas y textos -------------------------------------------- */
+/* ---- Logo --------------------------------------------------------- */
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 800;
+    font-size: 1.25rem;
+    letter-spacing: 0.06em;
+    color: var(--cafe);
+}
+
+.logo-icono {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--naranja);
+    color: var(--crema);
+}
+
+.logo-grande {
+    font-size: 2rem;
+}
+
+.logo-grande .logo-icono {
+    width: 54px;
+    height: 54px;
+}
+
+/* ---- Tarjetas, textos y avisos ------------------------------------ */
 
 .tarjeta {
-    background: var(--color-superficie);
-    border: 1px solid var(--color-borde);
+    background: var(--blanco);
+    border: 1px solid var(--borde);
     border-radius: var(--radio);
     box-shadow: var(--sombra);
-    padding: 1.5rem;
+    padding: 1.75rem;
 }
 
 .texto-suave {
-    color: var(--color-texto-suave);
+    color: var(--cafe-suave);
     margin: 0;
 }
 
 .mensaje-carga {
-    padding: 2rem;
+    padding: 3rem;
     text-align: center;
-    color: var(--color-texto-suave);
+    color: var(--cafe-suave);
 }
 
 .aviso {
     margin: 0;
-    padding: 0.6rem 0.8rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radio-sm);
+    font-size: 0.92rem;
+    font-weight: 600;
 }
 
 .aviso-error {
-    background: #fef2f2;
-    color: var(--color-error);
+    background: var(--error-suave);
+    color: var(--error);
 }
 
 .aviso-exito {
-    background: #f0fdf4;
-    color: var(--color-exito);
+    background: var(--salvia-suave);
+    color: #4d6e3d;
 }
 
 /* ---- Formularios -------------------------------------------------- */
@@ -79,58 +133,66 @@ a {
 .formulario {
     display: flex;
     flex-direction: column;
-    gap: 0.9rem;
+    gap: 1rem;
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
 }
 
 .formulario-ancho {
-    max-width: 620px;
+    max-width: 640px;
 }
 
 .fila {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.9rem;
+    gap: 1rem;
 }
 
 .campo {
     display: flex;
     flex-direction: column;
-    gap: 0.3rem;
+    gap: 0.35rem;
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 .campo input,
 .campo select {
     font: inherit;
-    font-weight: 400;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid var(--color-borde);
-    border-radius: 6px;
-    background: #fff;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.7rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+    transition: border-color 0.15s, background 0.15s;
 }
 
 .campo input:focus,
 .campo select:focus {
-    outline: 2px solid var(--color-primario);
-    outline-offset: -1px;
+    outline: none;
+    border-color: var(--naranja);
+    background: var(--blanco);
 }
 
 .boton {
     font: inherit;
-    font-weight: 600;
-    padding: 0.6rem 1rem;
+    font-weight: 800;
+    padding: 0.75rem 1.4rem;
     border: none;
-    border-radius: 6px;
-    background: var(--color-primario);
-    color: #fff;
+    border-radius: 999px;
+    background: var(--naranja);
+    color: var(--blanco);
     cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
 }
 
 .boton:hover {
-    background: var(--color-primario-oscuro);
+    background: var(--naranja-oscuro);
+}
+
+.boton:active {
+    transform: scale(0.98);
 }
 
 .boton:disabled {
@@ -140,36 +202,86 @@ a {
 
 .boton-secundario {
     background: transparent;
-    color: var(--color-texto);
-    border: 1px solid var(--color-borde);
+    color: var(--cafe);
+    border: 2px solid var(--borde);
+    padding: 0.5rem 1.1rem;
 }
 
 .boton-secundario:hover {
-    background: var(--color-fondo);
+    background: var(--arena);
 }
 
-/* ---- Login y registro --------------------------------------------- */
+/* ---- Pantallas sin sesión (login y registro) ---------------------- */
 
-.pagina-acceso {
+.pantalla-acceso {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.9fr) 1.1fr;
     min-height: 100vh;
+}
+
+.acceso-panel {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem;
+    background: var(--naranja);
+    color: var(--crema);
+}
+
+.acceso-panel .logo {
+    color: var(--crema);
+}
+
+.acceso-panel .logo-icono {
+    background: var(--crema);
+    color: var(--naranja);
+}
+
+.acceso-panel h2 {
+    font-size: 2rem;
+    max-width: 14ch;
+}
+
+.acceso-panel p {
+    max-width: 38ch;
+    line-height: 1.6;
+    opacity: 0.95;
+    margin: 0;
+}
+
+.acceso-huellas {
+    position: absolute;
+    right: 2rem;
+    bottom: 2rem;
+    display: flex;
+    gap: 1.2rem;
+    align-items: flex-end;
+    opacity: 0.35;
+}
+
+.acceso-huellas svg:nth-child(2) {
+    transform: translateY(-1.5rem) rotate(15deg);
+}
+
+.acceso-huellas svg:nth-child(3) {
+    transform: translateY(-3.5rem) rotate(-10deg);
+}
+
+.acceso-formulario {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
-}
-
-.marca-grande {
-    color: var(--color-primario);
-    font-size: 2rem;
-    letter-spacing: 0.05em;
-    margin: 0;
+    padding: 2rem;
 }
 
 /* ---- Plantilla con sesión ----------------------------------------- */
 
 .plantilla {
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 240px 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas:
         'encabezado encabezado'
@@ -182,85 +294,169 @@ a {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.5rem;
-    background: var(--color-superficie);
-    border-bottom: 1px solid var(--color-borde);
-}
-
-.marca {
-    font-weight: 800;
-    font-size: 1.2rem;
-    color: var(--color-primario);
-    letter-spacing: 0.05em;
+    padding: 0.8rem 1.75rem;
+    background: var(--blanco);
+    border-bottom: 1px solid var(--borde);
 }
 
 .encabezado-usuario {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+}
+
+.avatar {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--salvia);
+    color: var(--blanco);
+    font-weight: 800;
+}
+
+.encabezado-datos {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    margin-right: 0.5rem;
+}
+
+.encabezado-datos small {
+    color: var(--cafe-suave);
+    font-weight: 600;
 }
 
 .lateral {
     grid-area: lateral;
-    background: var(--color-superficie);
-    border-right: 1px solid var(--color-borde);
-    padding: 1rem 0.75rem;
+    background: var(--blanco);
+    border-right: 1px solid var(--borde);
+    padding: 1.25rem 0.9rem;
 }
 
 .menu {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.3rem;
 }
 
 .menu-enlace {
-    padding: 0.55rem 0.8rem;
-    border-radius: 6px;
-    color: var(--color-texto);
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: var(--radio-sm);
+    color: var(--cafe);
+    font-weight: 700;
     text-decoration: none;
+    transition: background 0.15s;
 }
 
 .menu-enlace:hover {
-    background: var(--color-fondo);
+    background: var(--crema);
 }
 
 .menu-enlace.activo {
-    background: #fff1ea;
-    color: var(--color-primario);
-    font-weight: 600;
+    background: var(--naranja-suave);
+    color: var(--naranja-oscuro);
+}
+
+.menu-icono {
+    font-size: 1.15rem;
+    width: 1.5rem;
+    text-align: center;
 }
 
 .menu-vacio {
-    color: var(--color-texto-suave);
+    color: var(--cafe-suave);
     font-size: 0.9rem;
     padding: 0 0.5rem;
 }
 
 .contenido {
     grid-area: contenido;
-    padding: 2rem;
+    padding: 2.25rem;
+}
+
+/* ---- Inicio ------------------------------------------------------- */
+
+.bienvenida {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.75rem 2rem;
+    border-radius: var(--radio-lg);
+    background: var(--salvia-suave);
+}
+
+.bienvenida p {
+    margin: 0;
+    color: #4d6e3d;
+    font-weight: 600;
+}
+
+.bienvenida-huella {
+    color: var(--salvia);
+    opacity: 0.6;
+    flex-shrink: 0;
 }
 
 .rejilla {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-top: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1.1rem;
+    margin-top: 1.5rem;
 }
 
-.tarjeta-enlace {
+.tarjeta-modulo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     text-decoration: none;
-    color: var(--color-texto);
-    font-weight: 600;
+    color: var(--cafe);
+    font-weight: 800;
+    font-size: 1.05rem;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
-.tarjeta-enlace:hover {
-    border-color: var(--color-primario);
+.tarjeta-modulo:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-hover);
+    border-color: var(--naranja);
+}
+
+.tarjeta-modulo-icono {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--naranja-suave);
+    font-size: 1.6rem;
 }
 
 /* ---- Pantallas pequeñas ------------------------------------------- */
 
-@media (max-width: 720px) {
+@media (max-width: 820px) {
+    .pantalla-acceso {
+        grid-template-columns: 1fr;
+    }
+
+    .acceso-panel {
+        padding: 2rem 1.5rem;
+    }
+
+    .acceso-panel h2 {
+        font-size: 1.5rem;
+        max-width: none;
+    }
+
+    .acceso-huellas {
+        display: none;
+    }
+
     .plantilla {
         grid-template-columns: 1fr;
         grid-template-areas:
@@ -269,9 +465,14 @@ a {
             'contenido';
     }
 
+    .encabezado-datos {
+        display: none;
+    }
+
     .lateral {
         border-right: none;
-        border-bottom: 1px solid var(--color-borde);
+        border-bottom: 1px solid var(--borde);
+        padding: 0.75rem;
     }
 
     .menu {

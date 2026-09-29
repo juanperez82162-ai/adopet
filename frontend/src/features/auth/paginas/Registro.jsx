@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { registrar } from '../auth.api.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
+import { PantallaAcceso } from '../../../componentes/PantallaAcceso.jsx';
 
 const FORMULARIO_VACIO = {
     documento: '',
@@ -75,10 +76,10 @@ export function Registro() {
     }
 
     return (
-        <div className="pagina-acceso">
+        <PantallaAcceso>
             <form className="tarjeta formulario formulario-ancho" onSubmit={enviar}>
-                <h1>Crear cuenta</h1>
-                <p className="texto-suave">Regístrese para adoptar en la Fundación Bello Animal.</p>
+                <h1>Crea tu cuenta</h1>
+                <p className="texto-suave">El primer paso para darle un hogar a un peludito.</p>
 
                 <div className="fila">
                     <label className="campo">
@@ -159,6 +160,6 @@ export function Registro() {
                     ¿Ya tiene cuenta? <Link to="/login">Inicie sesión</Link>
                 </p>
             </form>
-        </div>
+        </PantallaAcceso>
     );
 }
