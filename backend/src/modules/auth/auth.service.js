@@ -54,6 +54,14 @@ export async function obtenerMenu(documento) {
 }
 
 export async function registrar(datos) {
+    return crearUsuario(datos, 'Adoptante');
+}
+
+export async function crearAdministrador(datos) {
+    return crearUsuario(datos, 'Admin');
+}
+
+async function crearUsuario(datos, nombrePerfil) {
     validarContrasena(datos.contrasena);
     validarMayoriaEdad(datos.fechaNacimiento);
 
@@ -67,10 +75,10 @@ export async function registrar(datos) {
         throw new ErrorNegocio(400, 'CIUDAD_INVALIDA', 'La ciudad no es válida.');
     }
 
-    const idPerfil = await buscarIdPerfil('Adoptante');
+    const idPerfil = await buscarIdPerfil(nombrePerfil);
 
     if (!idPerfil) {
-        throw new Error('No existe el perfil Adoptante activo. Revise los datos base.');
+        throw new Error(`No existe el perfil ${nombrePerfil} activo. Revise los datos base.`);
     }
 
     const contrasenaHash = await bcrypt.hash(datos.contrasena, RONDAS_BCRYPT);
@@ -96,7 +104,8 @@ export async function registrar(datos) {
     return {
         documento: datos.documento,
         nombre: datos.nombre,
-        correo: datos.correo.toLowerCase()
+        correo: datos.correo.toLowerCase(),
+        perfil: nombrePerfil
     };
 }
 
