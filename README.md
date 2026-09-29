@@ -24,19 +24,24 @@ Docente: José Ignacio Botero · Integrantes: Juan Sebastián Pérez Morales y V
 | Base de datos | Oracle XE 21c en Docker |
 | Acceso a datos | node-oracledb (sin ORM) |
 | Sesión | JWT + bcryptjs |
+| Seguridad | helmet, CORS restringido y límite de intentos (express-rate-limit) |
 | Migraciones | Flyway |
+| Pruebas | node:test, corriendo en GitHub Actions |
 
 ## Estructura
 
 ```text
-db/migration/   migraciones de la base de datos (V1, V2, ...)
-backend/        API REST: un módulo por carpeta (routes, controller, service, repository)
-frontend/       aplicación web: una carpeta por módulo en src/features
+db/migration/     migraciones de la base de datos (V1, V2, ...)
+backend/          API REST: un módulo por carpeta (routes, controller, service, repository)
+backend/tests/    pruebas automáticas de las reglas de negocio
+frontend/         aplicación web: una carpeta por módulo en src/features
 ```
+
+¿Vas a crear un módulo nuevo? Parte de la plantilla `backend/src/modules/ejemplo` y `frontend/src/features/ejemplo`: los pasos están en [`LEEME.md`](backend/src/modules/ejemplo/LEEME.md).
 
 ## Cómo ejecutarlo
 
-Requisitos: Docker Desktop, Node.js 22 o superior y Flyway CLI.
+Requisitos: Docker Desktop, Node.js 24 y Flyway CLI.
 
 ```bash
 # 1. Base de datos
@@ -55,6 +60,15 @@ npm install
 npm run dev           # http://localhost:5173
 ```
 
+## Pruebas
+
+```bash
+cd backend
+npm test              # 34 pruebas, no necesitan Oracle
+```
+
+Las pruebas reemplazan el repositorio de cada módulo por funciones simuladas, así que corren sin base de datos. GitHub Actions las ejecuta en cada Pull Request hacia `main`, junto con el lint y el build del frontend: la insignia **CI** de arriba muestra el último resultado.
+
 ## Avance
 
 | Módulo | Estado |
@@ -63,6 +77,7 @@ npm run dev           # http://localhost:5173
 | Catálogos | ✅ Terminado |
 | Usuarios y Mi perfil | ✅ Terminado |
 | Accesos | ✅ Terminado |
+| Inicio con resumen según permisos | ✅ Terminado |
 | Mascotas | 🔄 En curso |
 | Solicitudes y match | ⏳ Pendiente |
 | Proceso formal | ⏳ Pendiente |

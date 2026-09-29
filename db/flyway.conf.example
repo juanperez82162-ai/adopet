@@ -20,6 +20,8 @@ flyway.password=adopet1234
 flyway.locations=filesystem:db/migration
 flyway.schemas=ADOPET
 
-# Permite "flyway clean" mientras el esquema esta en construccion.
-# Cuando arranque la Fase 2 y haya datos reales, cambiar a true.
-flyway.cleanDisabled=false
+# Bloquea "flyway clean", que BORRA todo el esquema (tablas y datos).
+# Desde la Fase 2 la base tiene datos reales (el Admin, usuarios, permisos):
+# debe quedar en true. Si alguna vez hiciera falta limpiar, se cambia a
+# false solo para ese comando y se vuelve a poner en true.
+flyway.cleanDisabled=true
