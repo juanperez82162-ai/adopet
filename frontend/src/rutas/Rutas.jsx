@@ -1,10 +1,12 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RutaProtegida, SoloInvitado } from './RutaProtegida.jsx';
+import { RequiereModulo } from './RequiereModulo.jsx';
 import { Plantilla } from '../componentes/Plantilla.jsx';
 import { PaginaPendiente } from '../componentes/PaginaPendiente.jsx';
 import { Login } from '../features/auth/paginas/Login.jsx';
 import { Registro } from '../features/auth/paginas/Registro.jsx';
 import { Inicio } from '../features/inicio/paginas/Inicio.jsx';
+import { Catalogos } from '../features/catalogos/paginas/Catalogos.jsx';
 
 export function Rutas() {
     return (
@@ -16,6 +18,10 @@ export function Rutas() {
 
             <Route element={<RutaProtegida><Plantilla /></RutaProtegida>}>
                 <Route path="/inicio" element={<Inicio />} />
+                <Route
+                    path="/catalogos"
+                    element={<RequiereModulo opcion="CATALOGOS"><Catalogos /></RequiereModulo>}
+                />
                 {/* Cada módulo agrega aquí su ruta cuando exista su pantalla. */}
                 <Route path="*" element={<PaginaPendiente />} />
             </Route>

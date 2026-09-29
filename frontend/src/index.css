@@ -437,6 +437,168 @@ a {
     font-size: 1.6rem;
 }
 
+/* ---- Páginas de módulos: cabecera, pestañas, tablas --------------- */
+
+.cabecera-pagina {
+    margin-bottom: 1.5rem;
+}
+
+.pestanas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.pestana {
+    font: inherit;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--borde);
+    border-radius: 999px;
+    background: var(--blanco);
+    color: var(--cafe);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.pestana:hover {
+    background: var(--arena);
+}
+
+.pestana.activa {
+    background: var(--naranja);
+    border-color: var(--naranja);
+    color: var(--blanco);
+}
+
+.formulario-linea {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.formulario-linea input,
+.entrada-tabla {
+    flex: 1;
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+}
+
+.formulario-linea input:focus,
+.entrada-tabla:focus {
+    outline: none;
+    border-color: var(--naranja);
+    background: var(--blanco);
+}
+
+.campo-filtro {
+    max-width: 240px;
+    margin-bottom: 1.25rem;
+}
+
+.selector-linea {
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+}
+
+.insignia.insignia-otro {
+    margin-left: 0.5rem;
+    background: var(--naranja-suave);
+    color: var(--naranja-oscuro);
+}
+
+.insignia.insignia-nivel {
+    background: var(--salvia-suave);
+    color: #4d6e3d;
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+.nota {
+    margin: 0 0 1.25rem;
+    padding: 0.8rem 1rem;
+    border-radius: var(--radio-sm);
+    background: var(--arena);
+    color: var(--cafe-suave);
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla th {
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cafe-suave);
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--borde);
+}
+
+.tabla td {
+    padding: 0.7rem 0.75rem;
+    border-bottom: 1px solid var(--borde);
+    font-weight: 600;
+}
+
+.tabla tr:last-child td {
+    border-bottom: none;
+}
+
+.fila-inactiva td {
+    color: var(--cafe-suave);
+}
+
+.tabla .columna-acciones {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.columna-acciones .boton + .boton {
+    margin-left: 0.5rem;
+}
+
+.boton-pequeno {
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+}
+
+.insignia {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    background: var(--arena);
+    color: var(--cafe-suave);
+}
+
+.insignia-activa {
+    background: var(--salvia-suave);
+    color: #4d6e3d;
+}
+
+.cabecera-pagina + .pestanas + .aviso,
+.pestanas + .aviso,
+.aviso + .aviso {
+    margin-bottom: 1rem;
+}
+
 /* ---- Pantallas pequeñas ------------------------------------------- */
 
 @media (max-width: 820px) {
@@ -482,6 +644,10 @@ a {
 
     .fila {
         grid-template-columns: 1fr;
+    }
+
+    .columna-acciones {
+        white-space: normal;
     }
 
     .contenido {

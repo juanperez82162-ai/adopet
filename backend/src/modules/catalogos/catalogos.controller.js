@@ -2,10 +2,11 @@ import { exito } from '../../utils/respuesta.js';
 import { ErrorNegocio } from '../../utils/errores.js';
 import { CATALOGOS } from './catalogos.config.js';
 import {
+    obtenerDefiniciones,
     obtenerActivos,
     obtenerTodos,
     crear,
-    renombrar,
+    modificar,
     cambiarEstado
 } from './catalogos.service.js';
 
@@ -22,27 +23,27 @@ export function resolverCatalogo(req, res, next, clave) {
     return next();
 }
 
+export function listarDefiniciones(req, res) {
+    return exito(res, obtenerDefiniciones());
+}
+
 export async function listarPublico(req, res) {
-    const valores = await obtenerActivos(req.catalogo);
-    return exito(res, valores);
+    return exito(res, await obtenerActivos(req.catalogo));
 }
 
 export async function listarAdmin(req, res) {
-    const valores = await obtenerTodos(req.catalogo);
-    return exito(res, valores);
+    return exito(res, await obtenerTodos(req.catalogo));
 }
 
 export async function crearValor(req, res) {
-    const nombre = validarNombre(req.body, req.catalogo);
-    const valor = await crear(req.catalogo, nombre);
-    return exito(res, valor, 201);
+    const datos = validarDatos(req.body, req.catalogo);
+    return exito(res, await crear(req.catalogo, datos), 201);
 }
 
-export async function renombrarValor(req, res) {
+export async function modificarValor(req, res) {
     const id = validarId(req.params.id);
-    const nombre = validarNombre(req.body, req.catalogo);
-    const valor = await renombrar(req.catalogo, id, nombre);
-    return exito(res, valor);
+    const datos = validarDatos(req.body, req.catalogo);
+    return exito(res, await modificar(req.catalogo, id, datos));
 }
 
 export async function cambiarEstadoValor(req, res) {
@@ -53,22 +54,34 @@ export async function cambiarEstadoValor(req, res) {
         throw new ErrorNegocio(400, 'DATOS_INVALIDOS', 'activo: debe ser true o false');
     }
 
-    const valor = await cambiarEstado(req.catalogo, id, activo);
-    return exito(res, valor);
+    return exito(res, await cambiarEstado(req.catalogo, id, activo));
 }
 
-function validarNombre(cuerpo = {}, catalogo) {
+function validarDatos(cuerpo = {}, catalogo) {
+    const errores = [];
     const nombre = typeof cuerpo.nombre === 'string' ? cuerpo.nombre.trim() : '';
 
     if (nombre.length === 0 || nombre.length > catalogo.largoNombre) {
-        throw new ErrorNegocio(
-            400,
-            'DATOS_INVALIDOS',
-            `nombre: obligatorio, máximo ${catalogo.largoNombre} caracteres`
-        );
+        errores.push(`nombre: obligatorio, máximo ${catalogo.largoNombre} caracteres`);
     }
 
-    return nombre;
+    const datos = { nombre };
+
+    if (catalogo.conNivel) {
+        const nivel = Number(cuerpo.nivel);
+
+        if (!Number.isInteger(nivel) || nivel < 1 || nivel > 3) {
+            errores.push('nivel: obligatorio, debe ser 1, 2 o 3');
+        }
+
+        datos.nivel = nivel;
+    }
+
+    if (errores.length > 0) {
+        throw new ErrorNegocio(400, 'DATOS_INVALIDOS', errores.join('; '));
+    }
+
+    return datos;
 }
 
 function validarId(valor) {
