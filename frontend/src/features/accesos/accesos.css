@@ -22,6 +22,11 @@
     gap: 0.5rem;
 }
 
+.modulo-protegido {
+    display: inline-flex;
+    color: var(--cafe-suave);
+}
+
 .acciones-accesos {
     display: flex;
     flex-wrap: wrap;
@@ -70,4 +75,8 @@
 
 .renombrar .campo {
     min-width: 220px;
+}
+
+.nota svg {
+    vertical-align: -2px;
 }

@@ -1,7 +1,7 @@
 import '../accesos.css';
 import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
-import { iconoDe } from '../../../componentes/iconosModulos.js';
+import { IconoModulo, IconoCandado } from '../../../componentes/Iconos.jsx';
 import {
     obtenerMatriz,
     guardarPermisos,
@@ -229,7 +229,7 @@ export function Accesos() {
 
                         {perfil?.opcionesProtegidas.length > 0 && (
                             <p className="nota">
-                                Los módulos marcados con 🔒 no se pueden quitar al perfil {perfil.nombre}: sin ellos nadie podría
+                                Los módulos marcados con el candado <IconoCandado tamano={14} /> no se pueden quitar al perfil {perfil.nombre}: sin ellos nadie podría
                                 volver a administrar usuarios ni accesos.
                             </p>
                         )}
@@ -254,9 +254,13 @@ export function Accesos() {
                                             <tr key={opcion.id} className={permiso.ver ? '' : 'fila-inactiva'}>
                                                 <td>
                                                     <span className="modulo-nombre">
-                                                        <span aria-hidden="true">{iconoDe(opcion.nombre)}</span>
+                                                        <IconoModulo opcion={opcion.nombre} tamano={18} />
                                                         {opcion.etiqueta}
-                                                        {protegida && <span title="Protegido" aria-label="Protegido"> 🔒</span>}
+                                                        {protegida && (
+                                                            <span className="modulo-protegido" title="Protegido" aria-label="Protegido">
+                                                                <IconoCandado tamano={14} />
+                                                            </span>
+                                                        )}
                                                     </span>
                                                 </td>
                                                 {ACCIONES.map(([clave, etiqueta]) => (

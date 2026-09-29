@@ -53,5 +53,5 @@
     height: 52px;
     border-radius: 16px;
     background: var(--naranja-suave);
-    font-size: 1.6rem;
+    color: var(--naranja-oscuro);
 }

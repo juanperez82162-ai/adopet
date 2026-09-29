@@ -531,9 +531,10 @@ a {
 }
 
 .menu-icono {
-    font-size: 1.15rem;
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
     width: 1.5rem;
-    text-align: center;
 }
 
 .menu-vacio {

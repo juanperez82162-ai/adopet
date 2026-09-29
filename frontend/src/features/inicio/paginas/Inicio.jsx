@@ -1,7 +1,7 @@
 import '../inicio.css';
 import { Link } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
-import { iconoDe } from '../../../componentes/iconosModulos.js';
+import { IconoModulo } from '../../../componentes/Iconos.jsx';
 import { Huella } from '../../../componentes/Huella.jsx';
 
 export function Inicio() {
@@ -22,7 +22,7 @@ export function Inicio() {
             <div className="rejilla">
                 {modulos.map((item) => (
                     <Link key={item.opcion} to={item.ruta} className="tarjeta tarjeta-modulo">
-                        <span className="tarjeta-modulo-icono" aria-hidden="true">{iconoDe(item.opcion)}</span>
+                        <span className="tarjeta-modulo-icono"><IconoModulo opcion={item.opcion} tamano={26} /></span>
                         {item.etiqueta}
                     </Link>
                 ))}
