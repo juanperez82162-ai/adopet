@@ -2,6 +2,7 @@ import '../catalogos.css';
 import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarDefiniciones, listarCatalogo, operacionesDe } from '../catalogos.api.js';
+import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
 
 // Explica qué es el nivel y qué significa cada uno en el catálogo elegido.
 function ExplicacionNivel({ definicion }) {
@@ -221,6 +222,13 @@ export function Catalogos() {
 
                     {cargando ? (
                         <p className="mensaje-carga">Cargando...</p>
+                    ) : valores.length === 0 ? (
+                        <EstadoVacio
+                            titulo="Este catálogo no tiene valores"
+                            texto={seleccionado.permiteCrear && puedeCrear
+                                ? 'Agrega el primero con el campo de arriba.'
+                                : 'Todavía no se ha definido ninguna opción.'}
+                        />
                     ) : (
                         <div className="tabla-contenedor">
                         <table className="tabla">

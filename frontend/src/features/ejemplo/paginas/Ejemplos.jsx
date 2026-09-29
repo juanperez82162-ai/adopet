@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarEjemplos, cambiarEstadoEjemplo } from '../ejemplo.api.js';
 import { FormularioEjemplo } from '../componentes/FormularioEjemplo.jsx';
+import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
+import { IconoLupa } from '../../../componentes/Iconos.jsx';
 
 // CAMBIA ESTO: el nombre de la opción del menú (OPCIONES_MENU.NOMBRE_OPCION).
 const OPCION = 'EJEMPLO';
@@ -150,9 +152,23 @@ export function Ejemplos() {
                 {registros === null ? (
                     <p className="mensaje-carga">Cargando...</p>
                 ) : registros.length === 0 ? (
-                    <p className="mensaje-carga">
-                        {hayFiltros ? 'Ningún registro coincide con la búsqueda.' : 'Todavía no hay registros.'}
-                    </p>
+                    // Lista vacía: el mensaje cambia si hay filtros o no.
+                    hayFiltros ? (
+                        <EstadoVacio
+                            icono={IconoLupa}
+                            titulo="Sin resultados"
+                            texto="Ningún registro coincide con la búsqueda."
+                        />
+                    ) : (
+                        // CAMBIA ESTO: ícono y textos del módulo (ej. icono={IconoMascota}).
+                        <EstadoVacio titulo="Todavía no hay registros" texto="Cuando se cree el primero aparecerá aquí.">
+                            {puedeCrear && enEdicion === undefined && (
+                                <button type="button" className="boton" onClick={() => setEnEdicion(null)}>
+                                    Crear el primero
+                                </button>
+                            )}
+                        </EstadoVacio>
+                    )
                 ) : (
                     <div className="tabla-contenedor">
                         <table className="tabla">

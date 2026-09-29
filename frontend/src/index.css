@@ -589,6 +589,46 @@ a {
     cursor: not-allowed;
 }
 
+/* ---- Lista vacía (componente EstadoVacio) ------------------------- */
+
+.estado-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+
+.estado-vacio-icono {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.4rem;
+    border-radius: 50%;
+    background: var(--naranja-suave);
+    color: var(--naranja-oscuro);
+}
+
+.estado-vacio-titulo {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.estado-vacio .texto-suave {
+    max-width: 42ch;
+}
+
+.estado-vacio-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
 /* ---- Tablas ------------------------------------------------------- */
 
 .tabla-contenedor {
