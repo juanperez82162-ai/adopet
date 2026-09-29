@@ -7,6 +7,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { catalogosRoutes } from './modules/catalogos/catalogos.routes.js';
 import { usuariosRoutes } from './modules/usuarios/usuarios.routes.js';
 import { accesosRoutes } from './modules/accesos/accesos.routes.js';
+import { inicioRoutes } from './modules/inicio/inicio.routes.js';
 
 export const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/accesos', accesosRoutes);
+app.use('/api/inicio', inicioRoutes);
 
 // El manejador de errores va SIEMPRE al final, después de todas las rutas.
 app.use(manejarErrores);

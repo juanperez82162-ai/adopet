@@ -1,6 +1,7 @@
 import { ErrorNegocio } from '../../utils/errores.js';
 import { normalizarUsuario, erroresDatosPerfil } from '../auth/auth.validaciones.js';
 import { cambiarContrasena } from '../auth/auth.service.js';
+import { PERFIL_VETADO } from '../../utils/perfiles.js';
 import {
     buscarUsuarioPorDocumento,
     existeCiudadActiva,
@@ -8,7 +9,8 @@ import {
     listarUsuarios,
     listarPerfilesActivos,
     actualizarPerfilUsuario,
-    actualizarEstadoUsuario
+    actualizarEstadoUsuario,
+    contarResumenUsuarios
 } from './usuarios.repository.js';
 
 const LIMITE_LISTA = 200;
@@ -235,4 +237,19 @@ function traducirCorreoDuplicado(err) {
         throw new ErrorNegocio(409, 'CORREO_REGISTRADO', 'Ya existe una cuenta con ese correo.',
             { correo: 'Ya existe una cuenta con este correo.' });
     }
+}
+
+// ---- Resumen para Inicio ---------------------------------------------
+// Lo usa el módulo inicio: un service puede llamar a otro service, pero
+// nunca al repository de otro módulo. Por eso el conteo vive aquí.
+
+export async function obtenerResumenUsuarios() {
+    const fila = await contarResumenUsuarios(PERFIL_VETADO);
+
+    return {
+        activos: fila.ACTIVOS,
+        nuevos: fila.NUEVOS,
+        desactivados: fila.DESACTIVADOS,
+        vetados: fila.VETADOS
+    };
 }

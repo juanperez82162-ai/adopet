@@ -162,3 +162,22 @@ export async function actualizarEstadoUsuario(documento, activo) {
         return resultado.rowsAffected;
     });
 }
+
+// Cifras para el resumen de Inicio, en UNA sola consulta.
+// Nuevos = registrados en los últimos 7 días, contando hoy.
+// Vetados = cuentas activas con el perfil Vetado (el veto es un perfil).
+export async function contarResumenUsuarios(perfilVetado) {
+    return conConexion(async (conexion) => {
+        const resultado = await conexion.execute(
+            `SELECT COUNT(CASE WHEN u.ACTIVO = 'S' THEN 1 END) AS ACTIVOS,
+                    COUNT(CASE WHEN u.FECHA_REGISTRO >= TRUNC(SYSDATE) - 6 THEN 1 END) AS NUEVOS,
+                    COUNT(CASE WHEN u.ACTIVO = 'N' THEN 1 END) AS DESACTIVADOS,
+                    COUNT(CASE WHEN u.ACTIVO = 'S' AND p.NOMBRE_PERFIL = :perfilVetado THEN 1 END) AS VETADOS
+               FROM USUARIOS u
+               JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL`,
+            { perfilVetado }
+        );
+
+        return resultado.rows[0];
+    });
+}
