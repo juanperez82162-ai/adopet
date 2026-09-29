@@ -1,3 +1,4 @@
+import '../usuarios.css';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';

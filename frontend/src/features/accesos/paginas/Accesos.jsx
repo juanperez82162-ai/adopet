@@ -1,3 +1,4 @@
+import '../accesos.css';
 import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { iconoDe } from '../../../componentes/iconosModulos.js';

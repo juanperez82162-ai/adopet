@@ -1,0 +1,57 @@
+/* Módulo inicio: bienvenida y tarjetas de acceso a los módulos. */
+
+.bienvenida {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.75rem 2rem;
+    border-radius: var(--radio-lg);
+    background: var(--salvia-suave);
+}
+
+.bienvenida p {
+    margin: 0;
+    color: #4d6e3d;
+    font-weight: 600;
+}
+
+.bienvenida-huella {
+    color: var(--salvia);
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1.1rem;
+    margin-top: 1.5rem;
+}
+
+.tarjeta-modulo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--cafe);
+    font-weight: 800;
+    font-size: 1.05rem;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.tarjeta-modulo:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-hover);
+    border-color: var(--naranja);
+}
+
+.tarjeta-modulo-icono {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--naranja-suave);
+    font-size: 1.6rem;
+}

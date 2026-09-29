@@ -1,3 +1,4 @@
+import '../inicio.css';
 import { Link } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { iconoDe } from '../../../componentes/iconosModulos.js';

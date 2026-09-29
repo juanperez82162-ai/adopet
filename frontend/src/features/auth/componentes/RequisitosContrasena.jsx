@@ -1,3 +1,4 @@
+import '../auth.css';
 import { requisitosContrasena } from '../validaciones.js';
 
 const REQUISITOS = [

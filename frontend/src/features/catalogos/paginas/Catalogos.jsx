@@ -1,3 +1,4 @@
+import '../catalogos.css';
 import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarDefiniciones, listarCatalogo, operacionesDe } from '../catalogos.api.js';

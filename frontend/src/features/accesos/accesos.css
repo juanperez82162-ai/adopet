@@ -1,0 +1,73 @@
+/* Módulo accesos: matriz de permisos y administración de perfiles. */
+
+.tabla .columna-casilla {
+    width: 110px;
+    text-align: center;
+}
+
+.casilla {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--naranja);
+    cursor: pointer;
+}
+
+.casilla:disabled {
+    cursor: not-allowed;
+}
+
+.modulo-nombre {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.acciones-accesos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.boton-nuevo-perfil {
+    margin-bottom: 1rem;
+}
+
+.nuevo-perfil {
+    max-width: 640px;
+    margin-bottom: 1.25rem;
+}
+
+.pestana-inactiva {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.datos-perfil {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.datos-perfil-resumen,
+.datos-perfil-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.renombrar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.renombrar .campo {
+    min-width: 220px;
+}

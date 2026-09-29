@@ -1,0 +1,93 @@
+/* Módulo catálogos: alta rápida, edición en la tabla y explicación de niveles. */
+
+.formulario-linea {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.formulario-linea input,
+.entrada-tabla {
+    flex: 1;
+    width: 100%;
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+}
+
+.formulario-linea input:focus,
+.entrada-tabla:focus {
+    outline: none;
+    border-color: var(--naranja);
+    background: var(--blanco);
+}
+
+.tabla input.entrada-tabla {
+    min-width: 150px;
+}
+
+.campo-filtro {
+    max-width: 240px;
+    margin-bottom: 1.25rem;
+}
+
+.insignia.insignia-otro {
+    margin-left: 0.5rem;
+    background: var(--naranja-suave);
+    color: var(--naranja-oscuro);
+}
+
+.insignia.insignia-nivel {
+    background: var(--salvia-suave);
+    color: #4d6e3d;
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+.explicacion {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radio-sm);
+    background: var(--salvia-suave);
+    color: #3f5c31;
+    font-size: 0.93rem;
+    line-height: 1.5;
+}
+
+.explicacion p {
+    margin: 0 0 0.5rem;
+}
+
+.explicacion-titulo {
+    font-weight: 800;
+}
+
+.explicacion-niveles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-weight: 700;
+}
+
+.columna-descripcion {
+    color: var(--cafe-suave);
+    font-weight: 600;
+    font-size: 0.92rem;
+    min-width: 260px;
+}
+
+.columna-descripcion textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.columna-nivel {
+    white-space: nowrap;
+}
