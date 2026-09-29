@@ -248,6 +248,36 @@ export async function restablecerContrasena(token, contrasenaNueva) {
     await actualizarContrasena(usuario.DOCUMENTO, nuevoHash);
 }
 
+// ---- Cambio de contraseña con sesión (Mi perfil) --------------------
+// Pide la contraseña actual: si alguien deja la sesión abierta, otra
+// persona no puede cambiarla. Al cambiarla, los enlaces de recuperación
+// pendientes dejan de servir (dependen del hash anterior).
+
+export async function cambiarContrasena(documento, contrasenaActual, contrasenaNueva) {
+    const usuario = await buscarUsuarioPorDocumento(documento);
+
+    if (!usuario || usuario.ACTIVO !== 'S') {
+        throw new ErrorNegocio(404, 'USUARIO_NO_EXISTE', 'El usuario no existe o está desactivado.');
+    }
+
+    const actualCorrecta = await bcrypt.compare(contrasenaActual, usuario.CONTRASENA_HASH);
+
+    if (!actualCorrecta) {
+        throw new ErrorNegocio(400, 'CONTRASENA_ACTUAL_INCORRECTA', 'La contraseña actual no es correcta.',
+            { contrasenaActual: 'La contraseña actual no es correcta.' });
+    }
+
+    const mensaje = errorContrasena(contrasenaNueva)
+        || (contrasenaNueva === contrasenaActual ? 'Debe ser distinta a la contraseña actual.' : null);
+
+    if (mensaje) {
+        throw new ErrorNegocio(400, 'DATOS_INVALIDOS', 'Revisa los campos marcados.', { contrasenaNueva: mensaje });
+    }
+
+    const nuevoHash = await bcrypt.hash(contrasenaNueva, RONDAS_BCRYPT);
+    await actualizarContrasena(documento, nuevoHash);
+}
+
 function plantillaCorreoRecuperacion(nombre, enlace) {
     return `
 <div style="font-family: Arial, sans-serif; background: #fff8f0; padding: 32px;">

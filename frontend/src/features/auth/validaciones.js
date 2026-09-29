@@ -267,3 +267,31 @@ export function validarRegistro(datos, reglaDocumento) {
 
     return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
 }
+
+// ---- Mi perfil ------------------------------------------------------
+
+export function validarDatosPerfil(datos) {
+    const errores = {
+        primerNombre: errorNombre(datos.primerNombre, 'primer nombre', true),
+        segundoNombre: errorNombre(datos.segundoNombre, 'segundo nombre', false),
+        primerApellido: errorNombre(datos.primerApellido, 'primer apellido', true),
+        segundoApellido: errorNombre(datos.segundoApellido, 'segundo apellido', false),
+        correo: errorCorreo(datos.correo),
+        telefono: errorTelefono(datos.telefono),
+        idCiudad: datos.idCiudad ? null : 'Selecciona la ciudad.',
+        direccion: errorDireccion(datos.direccion)
+    };
+
+    return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
+}
+
+export function validarCambioContrasena(datos) {
+    const errores = {
+        contrasenaActual: datos.contrasenaActual ? null : 'Escribe tu contraseña actual.',
+        contrasenaNueva: errorContrasena(datos.contrasenaNueva)
+            || (datos.contrasenaNueva === datos.contrasenaActual ? 'Debe ser distinta a la contraseña actual.' : null),
+        confirmacion: errorConfirmacion(datos.contrasenaNueva, datos.confirmacion)
+    };
+
+    return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
+}

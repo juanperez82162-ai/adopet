@@ -9,6 +9,7 @@ import { RecuperarContrasena } from '../features/auth/paginas/RecuperarContrasen
 import { RestablecerContrasena } from '../features/auth/paginas/RestablecerContrasena.jsx';
 import { Inicio } from '../features/inicio/paginas/Inicio.jsx';
 import { Catalogos } from '../features/catalogos/paginas/Catalogos.jsx';
+import { MiPerfil } from '../features/usuarios/paginas/MiPerfil.jsx';
 
 export function Rutas() {
     return (
@@ -25,6 +26,10 @@ export function Rutas() {
                 <Route
                     path="/catalogos"
                     element={<RequiereModulo opcion="CATALOGOS"><Catalogos /></RequiereModulo>}
+                />
+                <Route
+                    path="/mi-perfil"
+                    element={<RequiereModulo opcion="MI_PERFIL"><MiPerfil /></RequiereModulo>}
                 />
                 {/* Cada módulo agrega aquí su ruta cuando exista su pantalla. */}
                 <Route path="*" element={<PaginaPendiente />} />

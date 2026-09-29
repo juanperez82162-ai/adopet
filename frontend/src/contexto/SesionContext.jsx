@@ -51,6 +51,16 @@ export function SesionProvider({ children }) {
         return sesion.usuario;
     }, []);
 
+    // Cuando el usuario edita sus datos (Mi perfil), se refresca el nombre
+    // que se ve en el encabezado sin tener que volver a iniciar sesión.
+    const actualizarUsuario = useCallback((cambios) => {
+        setUsuario((anterior) => {
+            const nuevo = { ...anterior, ...cambios };
+            guardarSesion(leerToken(), nuevo);
+            return nuevo;
+        });
+    }, []);
+
     // Permisos para decidir qué se MUESTRA. La seguridad real está en el backend.
     const puedeVer = useCallback(
         (opcion) => menu.some((item) => item.opcion === opcion),
@@ -66,8 +76,8 @@ export function SesionProvider({ children }) {
     );
 
     const valor = useMemo(
-        () => ({ usuario, menu, cargando, iniciarSesion, cerrarSesion, puedeVer, tienePermiso }),
-        [usuario, menu, cargando, iniciarSesion, cerrarSesion, puedeVer, tienePermiso]
+        () => ({ usuario, menu, cargando, iniciarSesion, cerrarSesion, actualizarUsuario, puedeVer, tienePermiso }),
+        [usuario, menu, cargando, iniciarSesion, cerrarSesion, actualizarUsuario, puedeVer, tienePermiso]
     );
 
     return <SesionContexto.Provider value={valor}>{children}</SesionContexto.Provider>;

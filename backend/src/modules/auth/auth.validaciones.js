@@ -229,26 +229,38 @@ export function errorFechaNacimiento(fecha, hoy = new Date()) {
     return null;
 }
 
-// ---- Todas las reglas de formato del usuario -------------------------
-// Devuelve { campo: mensaje } solo con los campos que tienen error.
-// El documento se revisa aparte, porque su regla sale de la base.
+// ---- Grupos de reglas ------------------------------------------------
+// Cada uno devuelve { campo: mensaje } solo con los campos que tienen error.
 
-export function erroresFormatoUsuario(datos) {
-    const errores = {
+function soloConError(errores) {
+    return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
+}
+
+// Los datos que el usuario puede cambiar después, desde Mi perfil o
+// desde Usuarios: nombre, correo, teléfono, dirección y ciudad.
+export function erroresDatosPerfil(datos) {
+    return soloConError({
         primerNombre: errorNombre(datos.primerNombre, 'primer nombre', true),
         segundoNombre: errorNombre(datos.segundoNombre, 'segundo nombre', false),
         primerApellido: errorNombre(datos.primerApellido, 'primer apellido', true),
         segundoApellido: errorNombre(datos.segundoApellido, 'segundo apellido', false),
-        idTipoDocumento: Number.isInteger(datos.idTipoDocumento) && datos.idTipoDocumento > 0
-            ? null : 'Selecciona el tipo de documento.',
         correo: errorCorreo(datos.correo),
-        contrasena: errorContrasena(datos.contrasena),
         telefono: errorTelefono(datos.telefono),
         direccion: errorDireccion(datos.direccion),
         idCiudad: Number.isInteger(datos.idCiudad) && datos.idCiudad > 0
-            ? null : 'Selecciona la ciudad.',
-        fechaNacimiento: errorFechaNacimiento(datos.fechaNacimiento)
-    };
+            ? null : 'Selecciona la ciudad.'
+    });
+}
 
-    return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
+// Todo el registro. El documento se revisa aparte, porque su regla sale de la base.
+export function erroresFormatoUsuario(datos) {
+    return {
+        ...erroresDatosPerfil(datos),
+        ...soloConError({
+            idTipoDocumento: Number.isInteger(datos.idTipoDocumento) && datos.idTipoDocumento > 0
+                ? null : 'Selecciona el tipo de documento.',
+            contrasena: errorContrasena(datos.contrasena),
+            fechaNacimiento: errorFechaNacimiento(datos.fechaNacimiento)
+        })
+    };
 }

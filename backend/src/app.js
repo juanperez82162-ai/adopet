@@ -5,6 +5,7 @@ import { exito, error } from './utils/respuesta.js';
 import { manejarErrores } from './middlewares/errores.middleware.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { catalogosRoutes } from './modules/catalogos/catalogos.routes.js';
+import { usuariosRoutes } from './modules/usuarios/usuarios.routes.js';
 
 export const app = express();
 
@@ -35,6 +36,7 @@ app.get('/api/health', async (req, res) => {
 // Rutas de cada módulo
 app.use('/api/auth', authRoutes);
 app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/usuarios', usuariosRoutes);
 
 // El manejador de errores va SIEMPRE al final, después de todas las rutas.
 app.use(manejarErrores);
