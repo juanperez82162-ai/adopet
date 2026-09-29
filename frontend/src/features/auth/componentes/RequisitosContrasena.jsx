@@ -1,4 +1,6 @@
+import '../auth.css';
 import { requisitosContrasena } from '../validaciones.js';
+import { IconoCheck } from '../../../componentes/Iconos.jsx';
 
 const REQUISITOS = [
     ['largo', 'Mínimo 8 caracteres'],
@@ -18,14 +20,14 @@ export function RequisitosContrasena({ contrasena, confirmacion }) {
             <ul>
                 {REQUISITOS.map(([clave, texto]) => (
                     <li key={clave} className={cumple[clave] ? 'requisito-cumplido' : ''}>
-                        <span className="requisito-marca" aria-hidden="true">{cumple[clave] ? '✓' : '•'}</span>
+                        <span className="requisito-marca">{cumple[clave] && <IconoCheck tamano={12} />}</span>
                         {texto}
                     </li>
                 ))}
             </ul>
 
             {confirmacion && contrasena === confirmacion && (
-                <p className="coincide">✓ Las contraseñas coinciden</p>
+                <p className="coincide"><IconoCheck tamano={14} /> Las contraseñas coinciden</p>
             )}
         </div>
     );

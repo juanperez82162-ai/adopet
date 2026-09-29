@@ -1,3 +1,4 @@
+import '../auth.css';
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';

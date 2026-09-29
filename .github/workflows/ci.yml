@@ -19,13 +19,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - run: npm install --no-audit --no-fund
       - run: npm run lint
       - run: npm run build
 
   backend:
-    name: Backend (sintaxis)
+    name: Backend (sintaxis y pruebas)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,10 +34,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - run: npm install --no-audit --no-fund
       - name: Revisar que todos los archivos .js se puedan leer
         run: |
           for archivo in $(find src scripts server.js -name '*.js'); do
             node --check "$archivo"
           done
+      # Reglas de negocio con node:test y el repositorio simulado (sin Oracle).
+      - name: Pruebas automáticas
+        run: npm test

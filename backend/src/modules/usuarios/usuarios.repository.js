@@ -1,12 +1,8 @@
-import { obtenerConexion } from '../../config/database.js';
+import { conConexion } from '../../config/database.js';
 
 // Datos completos de un usuario, activo o no (el servicio decide qué hacer).
 export async function buscarUsuarioPorDocumento(documento) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT u.DOCUMENTO, td.NOMBRE AS TIPO_DOCUMENTO,
                     u.PRIMER_NOMBRE, u.SEGUNDO_NOMBRE, u.PRIMER_APELLIDO, u.SEGUNDO_APELLIDO,
@@ -24,19 +20,11 @@ export async function buscarUsuarioPorDocumento(documento) {
         );
 
         return resultado.rows[0] || null;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function existeCiudadActiva(idCiudad) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT COUNT(*) AS TOTAL
                FROM CIUDADES
@@ -46,19 +34,11 @@ export async function existeCiudadActiva(idCiudad) {
         );
 
         return resultado.rows[0].TOTAL === 1;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarDatosUsuario(documento, datos) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE USUARIOS
                 SET PRIMER_NOMBRE    = :primerNombre,
@@ -85,11 +65,7 @@ export async function actualizarDatosUsuario(documento, datos) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 // ---- Administración de usuarios --------------------------------------
@@ -99,11 +75,7 @@ const SIN_TILDES = (columna) => `TRANSLATE(LOWER(${columna}), 'áéíóúüñ', 
 
 // filtros: { buscar, idPerfil, activo }. Todos opcionales.
 export async function listarUsuarios(filtros, limite) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const condiciones = [];
         const valores = { limite };
 
@@ -146,19 +118,11 @@ export async function listarUsuarios(filtros, limite) {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function listarPerfilesActivos() {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT p.ID_PERFIL, p.NOMBRE_PERFIL, r.NOMBRE_ROL
                FROM PERFILES p
@@ -168,19 +132,11 @@ export async function listarPerfilesActivos() {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarPerfilUsuario(documento, idPerfil) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE USUARIOS
                 SET ID_PERFIL = :idPerfil
@@ -190,19 +146,11 @@ export async function actualizarPerfilUsuario(documento, idPerfil) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarEstadoUsuario(documento, activo) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE USUARIOS
                 SET ACTIVO = :activo
@@ -212,9 +160,24 @@ export async function actualizarEstadoUsuario(documento, activo) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
+}
+
+// Cifras para el resumen de Inicio, en UNA sola consulta.
+// Nuevos = registrados en los últimos 7 días, contando hoy.
+// Vetados = cuentas activas con el perfil Vetado (el veto es un perfil).
+export async function contarResumenUsuarios(perfilVetado) {
+    return conConexion(async (conexion) => {
+        const resultado = await conexion.execute(
+            `SELECT COUNT(CASE WHEN u.ACTIVO = 'S' THEN 1 END) AS ACTIVOS,
+                    COUNT(CASE WHEN u.FECHA_REGISTRO >= TRUNC(SYSDATE) - 6 THEN 1 END) AS NUEVOS,
+                    COUNT(CASE WHEN u.ACTIVO = 'N' THEN 1 END) AS DESACTIVADOS,
+                    COUNT(CASE WHEN u.ACTIVO = 'S' AND p.NOMBRE_PERFIL = :perfilVetado THEN 1 END) AS VETADOS
+               FROM USUARIOS u
+               JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL`,
+            { perfilVetado }
+        );
+
+        return resultado.rows[0];
+    });
 }

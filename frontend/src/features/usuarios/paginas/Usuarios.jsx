@@ -1,7 +1,10 @@
+import '../usuarios.css';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarUsuarios, listarPerfiles } from '../usuarios.api.js';
+import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
+import { IconoLupa, IconoUsuarios } from '../../../componentes/Iconos.jsx';
 
 // Los filtros viven en la URL (?buscar=...&idPerfil=...&estado=...):
 // así, al volver del detalle de un usuario, la búsqueda sigue igual.
@@ -116,9 +119,23 @@ export function Usuarios() {
                 {cargando ? (
                     <p className="mensaje-carga">Buscando...</p>
                 ) : resultado.usuarios.length === 0 ? (
-                    <p className="mensaje-carga">
-                        {hayFiltros ? 'Ningún usuario coincide con la búsqueda.' : 'Todavía no hay usuarios.'}
-                    </p>
+                    hayFiltros ? (
+                        <EstadoVacio
+                            icono={IconoLupa}
+                            titulo="Sin resultados"
+                            texto="Ningún usuario coincide con la búsqueda. Prueba con otro documento, nombre o correo, o cambia los filtros."
+                        >
+                            <button type="button" className="boton boton-secundario" onClick={limpiar}>
+                                Limpiar filtros
+                            </button>
+                        </EstadoVacio>
+                    ) : (
+                        <EstadoVacio
+                            icono={IconoUsuarios}
+                            titulo="Todavía no hay usuarios"
+                            texto="Cuando alguien se registre en ADOPET aparecerá aquí."
+                        />
+                    )
                 ) : (
                     <>
                         <p className="texto-suave conteo">

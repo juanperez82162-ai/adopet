@@ -1,0 +1,51 @@
+/* Estilos PROPIOS del módulo de ejemplo.
+   Lo común (tarjetas, botones, tablas, formularios, insignias) ya está en
+   index.css: aquí solo va lo que usa este módulo y nadie más.
+   Usa un prefijo con el nombre del módulo en cada clase (.ejemplo-...),
+   porque en Vite las clases son globales aunque el archivo sea del módulo.
+   CAMBIA ESTO: el prefijo (por ejemplo .mascotas-). */
+
+.ejemplo-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.ejemplo-barra .campo {
+    flex: 1;
+    min-width: 200px;
+}
+
+.ejemplo-barra input[type='search'] {
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.7rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+}
+
+.ejemplo-formulario {
+    margin-bottom: 1.25rem;
+}
+
+.ejemplo-formulario textarea {
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.7rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+    resize: vertical;
+}
+
+.ejemplo-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}

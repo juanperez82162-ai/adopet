@@ -1,15 +1,11 @@
 import oracledb from 'oracledb';
-import { obtenerConexion } from '../../config/database.js';
+import { conConexion } from '../../config/database.js';
 
 // RAZAS no es un catálogo simple: cada raza pertenece a una especie.
 // Por eso tiene su propio repositorio dentro del módulo de catálogos.
 
 export async function listarActivasPorEspecie(idEspecie) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT r.ID_RAZA AS ID, r.NOMBRE
                FROM RAZAS r
@@ -22,19 +18,11 @@ export async function listarActivasPorEspecie(idEspecie) {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function listarTodasPorEspecie(idEspecie) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT ID_RAZA AS ID, NOMBRE, ACTIVO
                FROM RAZAS
@@ -44,19 +32,11 @@ export async function listarTodasPorEspecie(idEspecie) {
         );
 
         return resultado.rows;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function especieActiva(idEspecie) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT COUNT(*) AS TOTAL
                FROM ESPECIES
@@ -66,19 +46,11 @@ export async function especieActiva(idEspecie) {
         );
 
         return resultado.rows[0].TOTAL === 1;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function insertarRaza(idEspecie, nombre) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `INSERT INTO RAZAS (ID_ESPECIE, NOMBRE)
              VALUES (:idEspecie, :nombre)
@@ -92,19 +64,11 @@ export async function insertarRaza(idEspecie, nombre) {
         );
 
         return resultado.outBinds.id[0];
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarNombreRaza(id, nombre) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE RAZAS SET NOMBRE = :nombre WHERE ID_RAZA = :id`,
             { nombre, id },
@@ -112,19 +76,11 @@ export async function actualizarNombreRaza(id, nombre) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 export async function actualizarActivoRaza(id, activo) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `UPDATE RAZAS SET ACTIVO = :activo WHERE ID_RAZA = :id`,
             { activo, id },
@@ -132,20 +88,12 @@ export async function actualizarActivoRaza(id, activo) {
         );
 
         return resultado.rowsAffected;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
 
 // Cuántas razas activas quedan en la misma especie sin contar la indicada.
 export async function contarOtrasRazasActivas(id) {
-    let conexion;
-
-    try {
-        conexion = await obtenerConexion();
-
+    return conConexion(async (conexion) => {
         const resultado = await conexion.execute(
             `SELECT COUNT(*) AS TOTAL
                FROM RAZAS
@@ -156,9 +104,5 @@ export async function contarOtrasRazasActivas(id) {
         );
 
         return resultado.rows[0].TOTAL;
-    } finally {
-        if (conexion) {
-            await conexion.close();
-        }
-    }
+    });
 }
