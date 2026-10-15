@@ -1,0 +1,246 @@
+/* Estilos PROPIOS del módulo de mascotas.
+   Lo común (tarjetas, botones, formularios, insignias) ya está en
+   index.css. Cada clase lleva el prefijo .mascotas- porque en Vite las
+   clases son globales aunque el archivo sea del módulo. */
+
+.mascotas-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.5rem;
+}
+
+.mascotas-barra .campo {
+    flex: 1;
+    min-width: 180px;
+}
+
+.mascotas-barra input[type='search'],
+.mascotas-formulario textarea,
+.mascotas-formulario input[type='date'] {
+    font: inherit;
+    font-weight: 600;
+    color: var(--cafe);
+    padding: 0.7rem 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio-sm);
+    background: var(--crema);
+}
+
+.mascotas-formulario {
+    margin-bottom: 1.25rem;
+}
+
+.mascotas-formulario textarea {
+    resize: vertical;
+}
+
+.mascotas-fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.mascotas-fila > .campo {
+    flex: 1;
+    min-width: 180px;
+}
+
+.mascotas-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.mascotas-nota-fotos {
+    margin: -0.5rem 0 1.25rem;
+}
+
+/* ---- Rejilla de tarjetas ---- */
+
+.mascotas-rejilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mascotas-tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0;
+    overflow: hidden;
+}
+
+.mascotas-tarjeta-cuerpo {
+    flex: 1;
+    padding: 0 1.1rem;
+}
+
+.mascotas-tarjeta-cuerpo h2 {
+    margin: 0 0 0.15rem;
+    font-size: 1.2rem;
+}
+
+.mascotas-tarjeta-cuerpo p {
+    margin: 0.15rem 0;
+}
+
+.mascotas-tarjeta .mascotas-botones {
+    padding: 0 1.1rem 1.1rem;
+}
+
+.mascotas-insignias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+/* ---- Fotos ---- */
+
+.mascotas-foto {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--arena);
+}
+
+.mascotas-foto-vacia {
+    display: grid;
+    place-items: center;
+    color: var(--cafe-suave);
+}
+
+.mascotas-foto-cargando {
+    animation: mascotas-latido 1.2s ease-in-out infinite;
+}
+
+@keyframes mascotas-latido {
+    50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mascotas-foto-cargando { animation: none; }
+}
+
+.mascotas-foto-miniatura {
+    width: 96px;
+    border-radius: var(--radio-sm);
+}
+
+.mascotas-foto-grande {
+    border-radius: var(--radio);
+}
+
+.mascotas-fotos-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mascotas-fotos-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+}
+
+.mascotas-miniatura {
+    padding: 0;
+    border: 3px solid transparent;
+    border-radius: var(--radio-sm);
+    background: none;
+    cursor: pointer;
+}
+
+.mascotas-miniatura-activa {
+    border-color: var(--naranja);
+}
+
+/* ---- Ficha ---- */
+
+.mascotas-ficha {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.mascotas-ficha-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.mascotas-ficha-datos header h2 {
+    margin: 0 0 0.2rem;
+}
+
+.mascotas-ficha-datos header p {
+    margin: 0 0 0.75rem;
+}
+
+.mascotas-ficha-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 720px) {
+    .mascotas-ficha {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Mascota en tratamiento: foto en gris con una marca de agua encima. */
+
+.mascotas-marco {
+    position: relative;
+}
+
+.mascotas-marco-tratamiento .mascotas-foto {
+    filter: grayscale(1) brightness(0.9);
+}
+
+.mascotas-marca {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1rem;
+    text-align: center;
+    color: #fff;
+    background: rgba(61, 44, 34, 0.5);
+    pointer-events: none;
+}
+
+.mascotas-marca-icono {
+    font-size: 1.8rem;
+}
+
+.mascotas-marca p {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.35;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.mascotas-marca .mascotas-marca-titulo {
+    font-size: 1.05rem;
+    font-weight: 900;
+}

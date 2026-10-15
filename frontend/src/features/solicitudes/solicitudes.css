@@ -1,0 +1,199 @@
+/* Estilos PROPIOS del módulo de solicitudes (prefijo .solicitudes-) y de
+   la ventana emergente genérica (.ventana-). */
+
+.ventana-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+    background: rgba(61, 44, 34, 0.45);
+}
+
+.ventana {
+    width: 100%;
+    max-width: 640px;
+    padding: 1.5rem;
+}
+
+.ventana:focus {
+    outline: none;
+}
+
+.ventana-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.ventana-cabecera h2 {
+    margin: 0;
+}
+
+.ventana-botones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.solicitudes-formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.solicitudes-formulario .campo input[type='text'] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.solicitudes-recomendadas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.solicitudes-recomendada {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--crema);
+}
+
+.mascotas-foto.solicitudes-foto {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    border-radius: var(--radio-sm);
+    object-fit: cover;
+}
+
+.solicitudes-recomendada-datos {
+    flex: 1;
+    min-width: 160px;
+}
+
+.solicitudes-recomendada-datos h3,
+.solicitudes-recomendada-datos p {
+    margin: 0 0 0.25rem;
+}
+
+.solicitudes-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--salvia-suave);
+}
+
+.solicitudes-banner p {
+    margin: 0;
+    font-weight: 700;
+}
+
+.solicitudes-detalle {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.1rem;
+    margin-bottom: 1.25rem;
+}
+
+.solicitudes-detalle > .datos-fijos,
+.solicitudes-detalle > .solicitudes-confirmacion {
+    align-self: stretch;
+}
+
+.solicitudes-detalle h3,
+.solicitudes-detalle p {
+    margin: 0;
+}
+
+.solicitudes-detalle-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.solicitudes-detalle-cabecera h2,
+.solicitudes-detalle-cabecera p {
+    margin: 0 0 0.25rem;
+}
+
+.solicitudes-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.solicitudes-confirmacion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--crema);
+}
+
+/* Colores por estado del proceso: se leen de un vistazo.
+   Naranja = espera · verde = avanza · azul = en prueba · rojo = se cayó. */
+
+.insignia.estado-proceso::before {
+    content: '';
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-right: 0.4rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.insignia.estado-pendiente {
+    background: var(--naranja-suave);
+    color: #9a4a1c;
+}
+
+.insignia.estado-activo {
+    background: var(--salvia-suave);
+    color: #3f6b2c;
+}
+
+.insignia.estado-prueba {
+    background: #e1eefa;
+    color: #25598a;
+}
+
+.insignia.estado-finalizado {
+    background: #cfe6c4;
+    color: #2d5a1c;
+}
+
+.insignia.estado-vencido {
+    background: #efe6d8;
+    color: #7a5a22;
+}
+
+.insignia.estado-cancelado {
+    background: var(--error-suave);
+    color: var(--error);
+}

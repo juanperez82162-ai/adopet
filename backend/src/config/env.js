@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -34,9 +36,20 @@ export const config = {
     // Dirección del frontend, para armar los enlaces que van en los correos.
     frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, ''),
 
+    // Carpeta donde se guardan las fotos de las mascotas (fuera de git).
+    // Si no es una ruta absoluta, se cuenta desde la carpeta backend/.
+    fotos: {
+        carpeta: path.resolve(
+            fileURLToPath(new URL('../../', import.meta.url)),
+            process.env.UPLOADS_DIR || 'uploads'
+        )
+    },
+
     negocio: {
-        umbralMatch: Number(process.env.UMBRAL_MATCH),
-        diasProcesoFormal: Number(process.env.DIAS_PROCESO_FORMAL),
-        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT)
+        umbralMatch: Number(process.env.UMBRAL_MATCH || 60),
+        diasProcesoFormal: Number(process.env.DIAS_PROCESO_FORMAL || 15),
+        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT || 7),
+        // Con cuántos días de anticipación se avisa que un trámite está por vencer.
+        diasAvisoVencimiento: Number(process.env.DIAS_AVISO_VENCIMIENTO || 3)
     }
 };

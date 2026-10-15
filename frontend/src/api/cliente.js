@@ -59,7 +59,9 @@ export function borrarSesion() {
 
 // ---- Peticiones -----------------------------------------------------
 
-export async function peticion(ruta, { metodo = 'GET', cuerpo } = {}) {
+// formulario: un FormData (para subir archivos). Con él no se pone
+// Content-Type: el navegador lo arma solo, con el separador del multipart.
+export async function peticion(ruta, { metodo = 'GET', cuerpo, formulario } = {}) {
     const token = leerToken();
     const encabezados = {};
 
@@ -77,7 +79,7 @@ export async function peticion(ruta, { metodo = 'GET', cuerpo } = {}) {
         respuesta = await fetch(`${URL_BASE}${ruta}`, {
             method: metodo,
             headers: encabezados,
-            body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined
+            body: formulario ?? (cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined)
         });
     } catch {
         throw new ErrorApi('SIN_CONEXION', 'No se pudo conectar con el servidor. Verifique que el backend esté encendido.', 0);
@@ -111,4 +113,30 @@ export async function peticion(ruta, { metodo = 'GET', cuerpo } = {}) {
 
 export function peticionGet(ruta) {
     return peticion(ruta);
+}
+
+// Descarga un archivo protegido (por ejemplo una foto) con el token de la
+// sesión y lo devuelve como Blob. Una etiqueta <img src="..."> no puede
+// mandar el token, por eso las fotos se piden aquí.
+export async function descargarImagen(ruta) {
+    const token = leerToken();
+    let respuesta;
+
+    try {
+        respuesta = await fetch(`${URL_BASE}${ruta}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+    } catch {
+        throw new ErrorApi('SIN_CONEXION', 'No se pudo conectar con el servidor.', 0);
+    }
+
+    if (!respuesta.ok) {
+        if (respuesta.status === 401 && token) {
+            window.dispatchEvent(new Event(EVENTO_SESION_EXPIRADA));
+        }
+
+        throw new ErrorApi('ARCHIVO_NO_DISPONIBLE', 'No se pudo cargar el archivo.', respuesta.status);
+    }
+
+    return respuesta.blob();
 }

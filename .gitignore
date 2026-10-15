@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 # archivo de conexion con contrasena
 db/flyway.conf
+
+# fotos subidas por el staff
+backend/uploads/

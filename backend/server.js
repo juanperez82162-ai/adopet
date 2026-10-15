@@ -1,6 +1,8 @@
 import { app } from './src/app.js';
 import { config } from './src/config/env.js';
 import { iniciarPool, cerrarPool } from './src/config/database.js';
+import { iniciarJobVencimiento } from './src/jobs/vencimiento.job.js';
+import { iniciarJobAlertas } from './src/jobs/alertas.job.js';
 
 async function iniciar() {
     try {
@@ -10,6 +12,10 @@ async function iniciar() {
         app.listen(config.puerto, () => {
             console.log(`Servidor escuchando en http://localhost:${config.puerto}`);
         });
+
+        // Tareas programadas (node-cron).
+        iniciarJobVencimiento();
+        iniciarJobAlertas();
     } catch (err) {
         console.error('No se pudo iniciar el servidor:', err.message);
         process.exit(1);

@@ -78,7 +78,9 @@ export function Inicio() {
                     <div className="resumen-cifras">
                         {bloque.cifras.map((cifra) => (
                             <div key={cifra.clave} className="tarjeta resumen-cifra">
-                                <span className="resumen-valor">{cifra.valor}</span>
+                                <span className={cifra.tono && cifra.valor > 0 ? `resumen-valor resumen-${cifra.tono}` : 'resumen-valor'}>
+                                    {cifra.valor}
+                                </span>
                                 <span className="resumen-etiqueta">{cifra.etiqueta}</span>
                             </div>
                         ))}

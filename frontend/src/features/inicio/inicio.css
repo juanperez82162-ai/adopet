@@ -99,6 +99,19 @@
     color: var(--naranja-oscuro);
 }
 
+/* Tono de la cifra (semáforo y avisos): solo se aplica cuando hay algo que mirar. */
+.resumen-verde {
+    color: #2d5a1c;
+}
+
+.resumen-amarillo {
+    color: #8a6a00;
+}
+
+.resumen-rojo {
+    color: var(--error);
+}
+
 .resumen-etiqueta {
     font-size: 0.9rem;
     font-weight: 700;
