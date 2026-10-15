@@ -1,0 +1,64 @@
+/* Estilos PROPIOS del módulo de seguimientos (prefijo .seguimientos-).
+   Las insignias de estado reutilizan las de solicitudes.css. */
+
+.insignia.semaforo-verde {
+    background: #cfe6c4;
+    color: #2d5a1c;
+}
+
+.insignia.semaforo-amarillo {
+    background: #fbefc2;
+    color: #8a6a00;
+}
+
+.insignia.semaforo-rojo {
+    background: var(--error-suave);
+    color: var(--error);
+}
+
+.seguimientos-pregunta {
+    margin: 0;
+    padding: 0.9rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--crema);
+}
+
+.seguimientos-pregunta legend {
+    padding: 0 0.4rem;
+    font-weight: 600;
+}
+
+.seguimientos-opcion {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+}
+
+.seguimientos-comentario {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 5rem;
+    resize: vertical;
+}
+
+.seguimientos-respuestas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.seguimientos-respuestas li {
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radio);
+    background: var(--crema);
+}
+
+.seguimientos-alarma {
+    color: var(--error);
+    font-weight: 600;
+}

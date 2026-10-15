@@ -15,6 +15,7 @@ import { DetalleUsuario } from '../features/usuarios/paginas/DetalleUsuario.jsx'
 import { Accesos } from '../features/accesos/paginas/Accesos.jsx';
 import { Mascotas } from '../features/mascotas/paginas/Mascotas.jsx';
 import { Solicitudes } from '../features/solicitudes/paginas/Solicitudes.jsx';
+import { Seguimientos } from '../features/seguimientos/paginas/Seguimientos.jsx';
 
 export function Rutas() {
     return (
@@ -55,6 +56,10 @@ export function Rutas() {
                 <Route
                     path="/solicitudes"
                     element={<RequiereModulo opcion="SOLICITUDES"><Solicitudes /></RequiereModulo>}
+                />
+                <Route
+                    path="/seguimientos"
+                    element={<RequiereModulo opcion="SEGUIMIENTOS"><Seguimientos /></RequiereModulo>}
                 />
                 {/* Cada módulo agrega aquí su ruta cuando exista su pantalla. */}
                 <Route path="*" element={<PaginaPendiente />} />
