@@ -185,3 +185,40 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Mascota en tratamiento: foto en gris con una marca de agua encima. */
+
+.mascotas-marco {
+    position: relative;
+}
+
+.mascotas-marco-tratamiento .mascotas-foto {
+    filter: grayscale(1) brightness(0.9);
+}
+
+.mascotas-marca {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1rem;
+    text-align: center;
+    color: #fff;
+    background: rgba(61, 44, 34, 0.5);
+    pointer-events: none;
+}
+
+.mascotas-marca-icono {
+    font-size: 1.8rem;
+}
+
+.mascotas-marca p {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.35;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}

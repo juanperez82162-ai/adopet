@@ -8,7 +8,7 @@ import { formatearEdad } from '../mascotas.formatos.js';
 import { FormularioMascota } from '../componentes/FormularioMascota.jsx';
 import { FormularioAlbergue } from '../componentes/FormularioAlbergue.jsx';
 import { FichaMascota } from '../componentes/FichaMascota.jsx';
-import { FotoMascota } from '../componentes/FotoMascota.jsx';
+import { FotoConMarca } from '../componentes/FotoConMarca.jsx';
 import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
 import { IconoLupa, IconoMascota } from '../../../componentes/Iconos.jsx';
 import { CuestionarioCompatibilidad } from '../../solicitudes/componentes/CuestionarioCompatibilidad.jsx';
@@ -302,7 +302,7 @@ export function Mascotas() {
                 <ul className="mascotas-rejilla">
                     {mascotas.map((m) => (
                         <li key={m.id} className={m.activo === false ? 'tarjeta mascotas-tarjeta fila-inactiva' : 'tarjeta mascotas-tarjeta'}>
-                            <FotoMascota idFoto={m.idFotoPrincipal} alt={`Foto de ${m.nombre}`} />
+                            <FotoConMarca mascota={m} idFoto={m.idFotoPrincipal} />
 
                             <div className="mascotas-tarjeta-cuerpo">
                                 <h2>{m.nombre}</h2>

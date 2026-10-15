@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { obtenerMascota } from '../mascotas.api.js';
 import { aSiNo, formatearEdad, formatearFecha } from '../mascotas.formatos.js';
 import { FotoMascota } from './FotoMascota.jsx';
+import { FotoConMarca } from './FotoConMarca.jsx';
 
 // Ficha completa de una mascota: todas sus fotos y todos sus datos.
 // El adoptante ve lo mismo que el staff, menos los datos internos del
@@ -31,7 +32,7 @@ export function FichaMascota({ mascota, alCerrar, alAdoptar }) {
     return (
         <article className="tarjeta mascotas-ficha" aria-label={`Ficha de ${m.nombre}`}>
             <div className="mascotas-ficha-fotos">
-                <FotoMascota idFoto={idFotoGrande} alt={`Foto de ${m.nombre}`} clase="mascotas-foto-grande" />
+                <FotoConMarca mascota={m} idFoto={idFotoGrande} clase="mascotas-foto-grande" />
 
                 {fotos.length > 1 && (
                     <ul className="mascotas-fotos-lista">
