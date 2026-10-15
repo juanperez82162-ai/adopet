@@ -136,17 +136,36 @@ export async function listarRespuestas(idSeguimiento) {
 
 // Guarda las respuestas y cierra el checkpoint en UNA transacción: o queda
 // todo o nada. Solo si el checkpoint sigue sin responder. Devuelve true si guardó.
+// Primero se bloquea la fila (por si dos peticiones llegan a la vez), luego se
+// guardan las respuestas y al final se marca el checkpoint como respondido:
+// el trigger de SEGUIMIENTOS exige que ya estén todas las respuestas.
 export async function guardarRespuestas(d) {
     return enTransaccion(async (conexion) => {
-        const r = await conexion.execute(
+        const libre = await conexion.execute(
+            `SELECT ID_SEGUIMIENTO
+               FROM SEGUIMIENTOS
+              WHERE ID_SEGUIMIENTO = :idSeguimiento
+                AND FECHA_RESPUESTA IS NULL
+                FOR UPDATE`,
+            { idSeguimiento: d.idSeguimiento }
+        );
+
+        if (libre.rows.length !== 1) return false;
+
+        await conexion.executeMany(
+            `INSERT INTO RESPUESTAS_SEGUIMIENTO (ID_SEGUIMIENTO, ID_PREGUNTA, ID_OPCION)
+             VALUES (:idSeguimiento, :idPregunta, :idOpcion)`,
+            d.respuestas.map((x) => ({ idSeguimiento: d.idSeguimiento, idPregunta: x.idPregunta, idOpcion: x.idOpcion }))
+        );
+
+        await conexion.execute(
             `UPDATE SEGUIMIENTOS
                 SET FECHA_RESPUESTA = SYSDATE,
                     SOLICITA_CONTACTO = :solicitaContacto,
                     COMENTARIO = :comentario,
                     PUNTAJE = :puntaje,
                     ID_SEMAFORO = :idSemaforo
-              WHERE ID_SEGUIMIENTO = :idSeguimiento
-                AND FECHA_RESPUESTA IS NULL`,
+              WHERE ID_SEGUIMIENTO = :idSeguimiento`,
             {
                 idSeguimiento: d.idSeguimiento,
                 solicitaContacto: d.solicitaContacto,
@@ -154,14 +173,6 @@ export async function guardarRespuestas(d) {
                 puntaje: d.puntaje,
                 idSemaforo: d.idSemaforo
             }
-        );
-
-        if (r.rowsAffected !== 1) return false;
-
-        await conexion.executeMany(
-            `INSERT INTO RESPUESTAS_SEGUIMIENTO (ID_SEGUIMIENTO, ID_PREGUNTA, ID_OPCION)
-             VALUES (:idSeguimiento, :idPregunta, :idOpcion)`,
-            d.respuestas.map((x) => ({ idSeguimiento: d.idSeguimiento, idPregunta: x.idPregunta, idOpcion: x.idOpcion }))
         );
 
         return true;
