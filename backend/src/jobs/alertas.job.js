@@ -1,7 +1,7 @@
 // JOB de alertas: avisa a los adoptantes de los seguimientos que ya pueden responder y al staff de checkpoints sin responder, trámites por
 // vencer y periodos de prueba cumplidos. Cada alerta se crea una sola vez, así
 // que puede correr cuantas veces haga falta. Corre al arrancar el servidor y
-// luego todos los días a las 07:00, hora de Bogotá. La lógica está en los
+// luego cada hora (un seguimiento puede habilitarse a cualquier hora), hora de Bogotá. La lógica está en los
 // services; aquí solo se agenda.
 
 import cron from 'node-cron';
@@ -30,6 +30,6 @@ async function ejecutar() {
 }
 
 export function iniciarJobAlertas() {
-    cron.schedule('0 7 * * *', ejecutar, { timezone: 'America/Bogota' });
+    cron.schedule('0 * * * *', ejecutar, { timezone: 'America/Bogota' });
     return ejecutar();
 }
