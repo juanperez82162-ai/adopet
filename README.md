@@ -11,9 +11,12 @@ Docente: José Ignacio Botero · Integrantes: Juan Sebastián Pérez Morales y V
 
 ## Qué hace
 
-- **Compatibilidad:** el adoptante responde un cuestionario y el sistema calcula qué mascotas encajan con él.
-- **Proceso controlado:** el staff formaliza cada adopción con plazos.
+- **Catálogo y compatibilidad:** el adoptante ve las mascotas del albergue y puede pedir una directamente, o responder un cuestionario y recibir las que mejor encajan con él.
+- **Proceso controlado:** el staff formaliza cada solicitud, con plazo para concretarla, y registra la entrega, la cancelación o el vencimiento.
 - **Seguimiento:** 3 meses de prueba con revisiones a los 3 días, 3 semanas y 3 meses, calificadas con un semáforo.
+- **Cierre:** el staff confirma la adopción tras revisar los seguimientos, o registra que la mascota fue devuelta.
+- **Alertas:** avisos automáticos al staff (semáforo en rojo, contacto solicitado, seguimientos sin responder, trámites por vencer) y al adoptante (cuándo responder y cómo va su trámite).
+- **Panel del staff:** el Inicio muestra las mascotas por estado, los trámites en curso y el semáforo de las adopciones en prueba.
 
 ## Tecnologías
 
@@ -26,13 +29,15 @@ Docente: José Ignacio Botero · Integrantes: Juan Sebastián Pérez Morales y V
 | Sesión | JWT + bcryptjs |
 | Seguridad | helmet, CORS restringido y límite de intentos (express-rate-limit) |
 | Migraciones | Flyway |
+| Tareas programadas | node-cron (vencimiento de trámites y alertas) |
 | Pruebas | node:test, corriendo en GitHub Actions |
 
 ## Estructura
 
 ```text
-db/migration/     migraciones de la base de datos (V1, V2, ...)
+db/migration/     migraciones de la base de datos (V1 a V16)
 backend/          API REST: un módulo por carpeta (routes, controller, service, repository)
+backend/src/jobs/ tareas programadas (vencimiento y alertas)
 backend/tests/    pruebas automáticas de las reglas de negocio
 frontend/         aplicación web: una carpeta por módulo en src/features
 ```
@@ -64,7 +69,7 @@ npm run dev           # http://localhost:5173
 
 ```bash
 cd backend
-npm test              # 34 pruebas, no necesitan Oracle
+npm test              # 220 pruebas, no necesitan Oracle
 ```
 
 Las pruebas reemplazan el repositorio de cada módulo por funciones simuladas, así que corren sin base de datos. GitHub Actions las ejecuta en cada Pull Request hacia `main`, junto con el lint y el build del frontend: la insignia **CI** de arriba muestra el último resultado.
@@ -78,10 +83,13 @@ Las pruebas reemplazan el repositorio de cada módulo por funciones simuladas, a
 | Usuarios y Mi perfil | ✅ Terminado |
 | Accesos | ✅ Terminado |
 | Inicio con resumen según permisos | ✅ Terminado |
-| Mascotas | 🔄 En curso |
-| Solicitudes y match | ⏳ Pendiente |
-| Proceso formal | ⏳ Pendiente |
-| Seguimientos | ⏳ Pendiente |
-| Notificaciones | ⏳ Pendiente |
+| Mascotas | ✅ Terminado |
+| Solicitudes y match | ✅ Terminado |
+| Proceso formal (formalizar, entregar, cancelar, vencer) | ✅ Terminado |
+| Seguimientos (checkpoints 3-3-3 y semáforo) | ✅ Terminado |
+| Cierre del período de prueba | ✅ Terminado |
+| Notificaciones y alertas | ✅ Terminado |
+| Panel del staff en Inicio | ✅ Terminado |
+| Triggers y tabla de errores | ⏳ Pendiente |
 
 El tablero con el detalle está en la pestaña **Projects**.
