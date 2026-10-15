@@ -78,7 +78,9 @@ export function Solicitudes() {
         setElegida(null);
         setAviso(accion === 'formalizar'
             ? `La solicitud de ${actualizada.adoptante} pasó a trámite activo.`
-            : 'La solicitud se canceló.');
+            : accion === 'retirar'
+                ? 'Cancelaste tu solicitud.'
+                : 'La solicitud se canceló.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -131,6 +133,7 @@ export function Solicitudes() {
                     key={elegida.id}
                     solicitud={elegida}
                     puedeGestionar={puedeGestionar}
+                    esPropia={!esStaff}
                     alCambiar={alCambiar}
                     alCerrar={() => setElegida(null)}
                 />

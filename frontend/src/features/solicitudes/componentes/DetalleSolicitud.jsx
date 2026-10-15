@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { FotoMascota } from '../../mascotas/componentes/FotoMascota.jsx';
 import { formatearFecha } from '../../mascotas/mascotas.formatos.js';
-import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud } from '../solicitudes.api.js';
+import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud } from '../solicitudes.api.js';
 import { aSiNo, claseEstadoProceso, etiquetaEstadoProceso, OPCIONES_CANCELACION } from '../solicitudes.formatos.js';
 
 const LARGO_MOTIVO = 500; // SOLICITUDES_ADOPCION.OBSERVACIONES
 
 // Detalle de una solicitud. Si puedeGestionar (staff con permiso de
 // modificar), permite formalizarla o cancelarla mientras esté abierta.
-export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerrar }) {
+// Si es esPropia (el adoptante), puede retirar su solicitud mientras no se formalice.
+export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambiar, alCerrar }) {
     const [carga, setCarga] = useState({ id: null, datos: null, error: '' });
-    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar'
+    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar' | 'retirar'
     const [motivo, setMotivo] = useState('');
     const [quienCancela, setQuienCancela] = useState('8');
     const [enviando, setEnviando] = useState(false);
@@ -44,9 +45,15 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerra
         setEnviando(true);
 
         try {
-            const actualizada = accion === 'formalizar'
-                ? await formalizarSolicitud(s.id, motivo.trim() || undefined)
-                : await cancelarSolicitud(s.id, Number(quienCancela), motivo.trim());
+            let actualizada;
+
+            if (accion === 'formalizar') {
+                actualizada = await formalizarSolicitud(s.id, motivo.trim() || undefined);
+            } else if (accion === 'retirar') {
+                actualizada = await cancelarMiSolicitud(s.id, motivo.trim() || undefined);
+            } else {
+                actualizada = await cancelarSolicitud(s.id, Number(quienCancela), motivo.trim());
+            }
 
             alCambiar(actualizada, accion);
         } catch (err) {
@@ -128,9 +135,28 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerra
                 </div>
             )}
 
+            {esPropia && s.estado === 'SOLICITUD' && !accion && (
+                <div className="solicitudes-acciones">
+                    <button type="button" className="boton boton-peligro" onClick={() => elegir('retirar')}>
+                        Cancelar mi solicitud
+                    </button>
+                </div>
+            )}
+
+            {esPropia && s.estado === 'ACTIVO' && (
+                <p className="texto-suave">
+                    Tu solicitud ya es un trámite activo. Si quieres cancelarlo, comunícate con el albergue.
+                </p>
+            )}
+
             {accion && (
                 <div className="solicitudes-confirmacion">
-                    {accion === 'formalizar' ? (
+                    {accion === 'retirar' ? (
+                        <p>
+                            Vas a cancelar tu solicitud para adoptar a {s.mascota}. Después no se puede reactivar,
+                            pero podrás enviar otra cuando quieras.
+                        </p>
+                    ) : accion === 'formalizar' ? (
                         <p>
                             La solicitud pasará a <strong>trámite activo</strong> y {s.mascota} quedará en proceso.
                             La persona tendrá un plazo para concretar la adopción.
@@ -151,7 +177,7 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerra
                     )}
 
                     <label className="campo">
-                        {accion === 'formalizar' ? 'Observaciones (opcional)' : 'Motivo'}
+                        {accion === 'cancelar' ? 'Motivo' : accion === 'retirar' ? 'Motivo (opcional)' : 'Observaciones (opcional)'}
                         <input type="text" value={motivo} maxLength={LARGO_MOTIVO} onChange={(e) => setMotivo(e.target.value)} />
                     </label>
 
@@ -161,7 +187,7 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerra
                         </button>
                         <button
                             type="button"
-                            className={accion === 'cancelar' ? 'boton boton-peligro' : 'boton'}
+                            className={accion === 'formalizar' ? 'boton' : 'boton boton-peligro'}
                             onClick={confirmar}
                             disabled={enviando}
                         >

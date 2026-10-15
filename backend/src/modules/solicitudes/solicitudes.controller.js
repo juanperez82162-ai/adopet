@@ -9,7 +9,8 @@ import {
     obtenerSolicitudes,
     obtenerSolicitud,
     formalizar,
-    cancelar
+    cancelar,
+    cancelarPropia
 } from './solicitudes.service.js';
 
 export async function opciones(req, res) {
@@ -38,4 +39,8 @@ export async function formalizarSolicitud(req, res) {
 
 export async function cancelarSolicitud(req, res) {
     return exito(res, await cancelar(req.params.id, req.body ?? {}, req.usuario));
+}
+
+export async function cancelarMiSolicitud(req, res) {
+    return exito(res, await cancelarPropia(req.params.id, req.body ?? {}, req.usuario));
 }

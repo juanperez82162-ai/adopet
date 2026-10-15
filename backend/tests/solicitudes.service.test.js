@@ -13,7 +13,7 @@ const mascotas = simular('modules/mascotas/mascotas.service.js', ['reservarMasco
 
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
-    obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar
+    obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia
 } =
     await import('../src/modules/solicitudes/solicitudes.service.js');
 
@@ -355,5 +355,45 @@ describe('cancelar', () => {
 
         await rechazaCon(cancelar(10, { idEstadoProceso: 8, observaciones: 'x' }, STAFF), 409, 'SOLICITUD_NO_CANCELABLE');
         assert.equal(mascotas.liberarMascotaDeProceso.mock.callCount(), 0);
+    });
+});
+
+describe('cancelarPropia (el adoptante retira su solicitud)', () => {
+    beforeEach(() => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud());
+        repo.cancelarSolicitud.mock.mockImplementation(async () => 1);
+    });
+
+    it('cancela como CANCELADO_ADOPTANTE sin staff y con motivo opcional', async () => {
+        await cancelarPropia(10, {}, ADOPTANTE);
+        assert.deepEqual(repo.cancelarSolicitud.mock.calls[0].arguments, [10, 1, 7, null, null]);
+
+        await cancelarPropia(10, { observaciones: 'Cambié de opinión' }, ADOPTANTE);
+        assert.equal(repo.cancelarSolicitud.mock.calls[1].arguments[4], 'Cambié de opinión');
+    });
+
+    it('no toca la mascota', async () => {
+        await cancelarPropia(10, {}, ADOPTANTE);
+        assert.equal(mascotas.liberarMascotaDeProceso.mock.callCount(), 0);
+    });
+
+    it('solo los adoptantes pueden', async () => {
+        await rechazaCon(cancelarPropia(10, {}, STAFF), 403, 'SOLO_ADOPTANTES');
+    });
+
+    it('no puede cancelar la solicitud de otra persona (404)', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ DOCUMENTO: '99' }));
+        await rechazaCon(cancelarPropia(10, {}, ADOPTANTE), 404, 'SOLICITUD_NO_ENCONTRADA');
+    });
+
+    it('un trámite activo se cancela hablando con el albergue', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ID_ESTADO_PROCESO: 2 }));
+        await rechazaCon(cancelarPropia(10, {}, ADOPTANTE), 409, 'SOLICITUD_NO_CANCELABLE');
+        assert.equal(repo.cancelarSolicitud.mock.callCount(), 0);
+    });
+
+    it('409 si cambió de estado mientras tanto', async () => {
+        repo.cancelarSolicitud.mock.mockImplementation(async () => 0);
+        await rechazaCon(cancelarPropia(10, {}, ADOPTANTE), 409, 'SOLICITUD_NO_CANCELABLE');
     });
 });

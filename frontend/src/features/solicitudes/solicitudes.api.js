@@ -48,3 +48,8 @@ export function formalizarSolicitud(id, observaciones) {
 export function cancelarSolicitud(id, idEstadoProceso, observaciones) {
     return peticion(`${BASE}/${id}/cancelar`, { metodo: 'PATCH', cuerpo: { idEstadoProceso, observaciones } });
 }
+
+// El adoptante retira su propia solicitud (motivo opcional).
+export function cancelarMiSolicitud(id, observaciones) {
+    return peticion(`${BASE}/${id}/cancelar-propia`, { metodo: 'PATCH', cuerpo: { observaciones } });
+}

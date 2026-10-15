@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { autenticar } from '../../middlewares/autenticacion.middleware.js';
 import { autorizar } from '../../middlewares/permisos.middleware.js';
-import { opciones, recomendar, crear, listar, ver, formalizarSolicitud, cancelarSolicitud } from './solicitudes.controller.js';
+import { opciones, recomendar, crear, listar, ver, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud } from './solicitudes.controller.js';
 
 // Debe coincidir con OPCIONES_MENU.NOMBRE_OPCION.
 const OPCION = 'SOLICITUDES';
@@ -29,3 +29,7 @@ solicitudesRoutes.get('/:id', autorizar(OPCION, 'CONSULTAR'), ver);
 // Formalizar y cancelar modifican la solicitud: acción MODIFICAR.
 solicitudesRoutes.patch('/:id/formalizar', autorizar(OPCION, 'MODIFICAR'), formalizarSolicitud);
 solicitudesRoutes.patch('/:id/cancelar', autorizar(OPCION, 'MODIFICAR'), cancelarSolicitud);
+
+// El adoptante retira su propia solicitud (solo si aún no se formalizó). Le basta
+// poder consultar: el service verifica que sea suya y que sea adoptante.
+solicitudesRoutes.patch('/:id/cancelar-propia', autorizar(OPCION, 'CONSULTAR'), cancelarMiSolicitud);

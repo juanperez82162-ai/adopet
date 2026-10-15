@@ -509,3 +509,31 @@ export async function cancelar(valorId, cuerpo, usuario) {
 
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
 }
+
+// El adoptante retira su propia solicitud. Solo mientras sigue en estado
+// SOLICITUD: una vez formalizada hay un trámite y una mascota en proceso, y
+// eso se cierra hablando con el albergue. El motivo es opcional.
+export async function cancelarPropia(valorId, cuerpo, usuario) {
+    exigirAdoptante(usuario);
+
+    // Si la solicitud no es suya, buscarExistente responde 404.
+    const fila = await buscarExistente(valorId, usuario);
+    const observaciones = leerMotivo(cuerpo, false);
+
+    if (fila.ID_ESTADO_PROCESO !== SOLICITUD) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_CANCELABLE',
+            fila.ID_ESTADO_PROCESO === ACTIVO
+                ? 'Tu solicitud ya es un trámite activo. Para cancelarlo comunícate con el albergue.'
+                : 'Esta solicitud ya está cerrada o en periodo de prueba.');
+    }
+
+    const cambiadas = await cancelarSolicitud(
+        fila.ID_SOLICITUD, SOLICITUD, CANCELADO_ADOPTANTE, null, observaciones
+    );
+
+    if (cambiadas !== 1) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_CANCELABLE', 'La solicitud cambió de estado. Actualiza la lista.');
+    }
+
+    return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), false);
+}
