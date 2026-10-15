@@ -8,13 +8,14 @@ const repo = simular('modules/mascotas/mascotas.repository.js', [
     'listarMascotas', 'buscarPorId', 'insertarMascota', 'actualizarMascota', 'desactivarMascota',
     'reactivarMascota', 'contarFotos', 'listarFotos', 'buscarFoto', 'insertarFoto', 'marcarPrincipal',
     'listarEstadosElegibles',
-    'eliminarFoto'
+    'eliminarFoto', 'cambiarEstadoSiEs'
 ]);
 const almacen = simular('modules/mascotas/fotos.almacen.js', ['guardarFoto', 'borrarFoto']);
 
 const {
     obtenerTodos, obtenerUno, crearMascota, modificarMascota, cambiarActivoMascota,
-    subirFoto, obtenerRutaFoto, marcarFotoPrincipal, obtenerEstadosElegibles, eliminarUnaFoto, LIMITE_FOTOS
+    subirFoto, obtenerRutaFoto, marcarFotoPrincipal, obtenerEstadosElegibles, eliminarUnaFoto, LIMITE_FOTOS,
+    reservarMascotaParaProceso, liberarMascotaDeProceso
 } = await import('../src/modules/mascotas/mascotas.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -396,5 +397,26 @@ describe('Mascotas', () => {
             repo.buscarPorId.mock.mockImplementation(async () => fila({ ESTADO: 'EN_TRATAMIENTO' }));
             assert.equal((await obtenerUno(7, STAFF)).estado, 'En tratamiento');
         });
+    });
+});
+
+describe('estado EN_PROCESO manejado por solicitudes', () => {
+    beforeEach(() => reiniciar(repo));
+
+    it('reservar pasa de DISPONIBLE (1) a EN_PROCESO (3)', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
+        assert.equal(await reservarMascotaParaProceso(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 1, 3]);
+    });
+
+    it('reservar devuelve false si la mascota ya no estaba disponible', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 0);
+        assert.equal(await reservarMascotaParaProceso(7), false);
+    });
+
+    it('liberar pasa de EN_PROCESO (3) a DISPONIBLE (1)', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
+        assert.equal(await liberarMascotaDeProceso(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 3, 1]);
     });
 });

@@ -19,7 +19,8 @@ import {
     insertarFoto,
     marcarPrincipal,
     listarEstadosElegibles,
-    eliminarFoto
+    eliminarFoto,
+    cambiarEstadoSiEs
 } from './mascotas.repository.js';
 import { detectarTipoImagen } from './fotos.tipo.js';
 import { guardarFoto, borrarFoto } from './fotos.almacen.js';
@@ -484,4 +485,19 @@ export async function eliminarUnaFoto(valorIdFoto, usuario) {
     }
 
     return obtenerUno(foto.ID_MASCOTA, usuario);
+}
+
+// ---- Para el módulo de solicitudes ----------------------------------------
+// El estado EN_PROCESO lo maneja el sistema, no el staff a mano. El módulo
+// de solicitudes lo pide a través de estas dos funciones (nunca toca
+// MASCOTAS directamente).
+
+// DISPONIBLE → EN_PROCESO. Devuelve true si la mascota estaba disponible.
+export async function reservarMascotaParaProceso(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, DISPONIBLE, EN_PROCESO)) === 1;
+}
+
+// EN_PROCESO → DISPONIBLE (el trámite se canceló o falló antes de entregar).
+export async function liberarMascotaDeProceso(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, EN_PROCESO, DISPONIBLE)) === 1;
 }

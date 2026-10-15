@@ -318,3 +318,23 @@ export async function eliminarFoto(idFoto, idMascota, eraPrincipal) {
         }
     });
 }
+
+// Cambia el estado SOLO si la mascota sigue activa y en el estado esperado.
+// Devuelve cuántas filas cambió (0 = alguien se adelantó o no cumplía).
+// Lo usa el módulo de solicitudes, a través del service, al formalizar o
+// cancelar un trámite.
+export async function cambiarEstadoSiEs(idMascota, estadoActual, estadoNuevo) {
+    return conConexion(async (conexion) => {
+        const resultado = await conexion.execute(
+            `UPDATE MASCOTAS
+                SET ID_ESTADO_MASCOTA = :estadoNuevo
+              WHERE ID_MASCOTA = :idMascota
+                AND ACTIVO = 'S'
+                AND ID_ESTADO_MASCOTA = :estadoActual`,
+            { idMascota, estadoActual, estadoNuevo },
+            { autoCommit: true }
+        );
+
+        return resultado.rowsAffected;
+    });
+}

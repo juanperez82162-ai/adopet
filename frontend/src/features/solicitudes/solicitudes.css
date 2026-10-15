@@ -107,3 +107,38 @@
     margin: 0;
     font-weight: 700;
 }
+
+.solicitudes-detalle {
+    margin-bottom: 1.25rem;
+}
+
+.solicitudes-detalle-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.solicitudes-detalle-cabecera h2,
+.solicitudes-detalle-cabecera p {
+    margin: 0 0 0.25rem;
+}
+
+.solicitudes-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.solicitudes-confirmacion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 2px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--crema);
+}

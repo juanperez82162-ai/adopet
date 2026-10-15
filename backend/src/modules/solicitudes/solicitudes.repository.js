@@ -140,3 +140,141 @@ export async function insertarSolicitud(d) {
         return { idSolicitud: r.outBinds.id[0], fechaEnvio: r.outBinds.fecha[0] };
     });
 }
+
+// ---- Consulta y gestión (staff) ----------------------------------------
+
+// Los segundos nombre/apellido pueden ser NULL: se colapsan los espacios dobles.
+const NOMBRE_ADOPTANTE = `REGEXP_REPLACE(TRIM(u.PRIMER_NOMBRE || ' ' || u.SEGUNDO_NOMBRE || ' ' || u.PRIMER_APELLIDO || ' ' || u.SEGUNDO_APELLIDO), ' +', ' ')`;
+
+const SELECT_SOLICITUD = `
+    SELECT s.ID_SOLICITUD,
+           s.DOCUMENTO,
+           ${NOMBRE_ADOPTANTE} AS NOMBRE_ADOPTANTE,
+           u.TELEFONO,
+           u.CORREO,
+           u.ACTIVO AS USUARIO_ACTIVO,
+           p.NOMBRE_PERFIL,
+           s.ID_MASCOTA,
+           m.NOMBRE AS MASCOTA,
+           m.ACTIVO AS MASCOTA_ACTIVA,
+           m.ID_ESTADO_MASCOTA,
+           (SELECT f.ID_FOTO FROM FOTOS_MASCOTAS f
+             WHERE f.ID_MASCOTA = m.ID_MASCOTA AND f.ES_PRINCIPAL = 'S') AS ID_FOTO_PRINCIPAL,
+           t.NIVEL AS NIVEL_TAMANIO,
+           n.NIVEL AS NIVEL_ENERGIA,
+           m.COMPATIBLE_NINOS,
+           m.COMPATIBLE_OTRAS_MASCOTAS,
+           m.TIENE_NECESIDADES_ESPECIALES,
+           s.ID_ESTADO_PROCESO,
+           ep.NOMBRE AS ESTADO,
+           s.FECHA_ENVIO,
+           s.FECHA_INICIO,
+           s.FECHA_VENCIMIENTO,
+           s.FECHA_RESOLUCION,
+           s.OBSERVACIONES,
+           s.ID_TIPO_VIVIENDA,
+           tv.NOMBRE AS TIPO_VIVIENDA,
+           tv.NIVEL AS NIVEL_VIVIENDA,
+           s.TIPO_VIVIENDA_OTRO,
+           s.TIENE_ESPACIO_EXTERIOR,
+           s.ID_TIEMPO_DISPONIBLE,
+           td.NOMBRE AS TIEMPO_DISPONIBLE,
+           td.NIVEL AS NIVEL_TIEMPO,
+           s.TIEMPO_DISPONIBLE_OTRO,
+           s.EXPERIENCIA_PREVIA,
+           s.EXPERIENCIA_PREVIA_OBSERVACIONES,
+           s.DISPUESTO_NECESIDADES_ESPECIALES,
+           s.TIENE_NINOS_HOGAR,
+           s.TIENE_OTRAS_MASCOTAS_HOGAR,
+           s.TIENE_OTRAS_MASCOTAS_HOGAR_OBSERVACIONES
+      FROM SOLICITUDES_ADOPCION s
+      JOIN USUARIOS u ON u.DOCUMENTO = s.DOCUMENTO
+      JOIN PERFILES p ON p.ID_PERFIL = u.ID_PERFIL
+      JOIN MASCOTAS m ON m.ID_MASCOTA = s.ID_MASCOTA
+      JOIN TAMANIOS t ON t.ID_TAMANIO = m.ID_TAMANIO
+      JOIN NIVELES_ENERGIA n ON n.ID_NIVEL_ENERGIA = m.ID_NIVEL_ENERGIA
+      JOIN ESTADOS_PROCESO ep ON ep.ID_ESTADO_PROCESO = s.ID_ESTADO_PROCESO
+      LEFT JOIN TIPOS_VIVIENDA tv ON tv.ID_TIPO_VIVIENDA = s.ID_TIPO_VIVIENDA
+      LEFT JOIN TIEMPOS_DISPONIBLES td ON td.ID_TIEMPO_DISPONIBLE = s.ID_TIEMPO_DISPONIBLE`;
+
+const SIN_TILDES = (columna) => `TRANSLATE(UPPER(${columna}), 'ÁÉÍÓÚÜ', 'AEIOUU')`;
+
+// filtros: { idEstadoProceso, texto (adoptante, documento o mascota),
+// documento (si se pasa, solo las de esa persona: así ve el adoptante las suyas) }.
+export async function listarSolicitudes(filtros) {
+    return conConexion(async (conexion) => {
+        const condiciones = [];
+        const valores = {};
+
+        if (filtros.documento) {
+            condiciones.push('s.DOCUMENTO = :documento');
+            valores.documento = filtros.documento;
+        }
+
+        if (filtros.idEstadoProceso) {
+            condiciones.push('s.ID_ESTADO_PROCESO = :idEstadoProceso');
+            valores.idEstadoProceso = filtros.idEstadoProceso;
+        }
+
+        if (filtros.texto) {
+            condiciones.push(`(${SIN_TILDES(NOMBRE_ADOPTANTE)} LIKE '%' || ${SIN_TILDES(':texto')} || '%'
+                          OR ${SIN_TILDES('m.NOMBRE')} LIKE '%' || ${SIN_TILDES(':texto')} || '%'
+                          OR s.DOCUMENTO LIKE '%' || :texto || '%')`);
+            valores.texto = filtros.texto;
+        }
+
+        const donde = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+        const r = await conexion.execute(
+            `${SELECT_SOLICITUD} ${donde} ORDER BY s.FECHA_ENVIO DESC, s.ID_SOLICITUD DESC`,
+            valores
+        );
+        return r.rows;
+    });
+}
+
+export async function buscarSolicitud(idSolicitud) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(`${SELECT_SOLICITUD} WHERE s.ID_SOLICITUD = :idSolicitud`, { idSolicitud });
+        return r.rows[0];
+    });
+}
+
+// Solo formaliza si la solicitud sigue en SOLICITUD (1). Devuelve las filas
+// cambiadas. Los índices UX_PROCESO_VIGENTE_* de la base impiden dos trámites
+// vigentes de la misma persona o de la misma mascota.
+export async function formalizarSolicitud(idSolicitud, documentoStaff, dias, observaciones) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = 2,
+                    DOCUMENTO_STAFF_INICIO = :documentoStaff,
+                    FECHA_INICIO = SYSDATE,
+                    FECHA_VENCIMIENTO = SYSDATE + :dias,
+                    OBSERVACIONES = :observaciones
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 1`,
+            { idSolicitud, documentoStaff, dias, observaciones },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}
+
+// Cancela una solicitud que sigue en el estado esperado (1 o 2).
+export async function cancelarSolicitud(idSolicitud, estadoActual, idEstadoNuevo, documentoStaff, observaciones) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = :idEstadoNuevo,
+                    DOCUMENTO_STAFF_CIERRE = :documentoStaff,
+                    FECHA_RESOLUCION = SYSDATE,
+                    OBSERVACIONES = :observaciones
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = :estadoActual`,
+            { idSolicitud, estadoActual, idEstadoNuevo, documentoStaff, observaciones },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}
