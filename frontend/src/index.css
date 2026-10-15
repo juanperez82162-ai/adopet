@@ -278,9 +278,14 @@ a {
     color: var(--cafe-suave);
 }
 
+.datos-fijos > div {
+    min-width: 0;
+}
+
 .datos-fijos dd {
     margin: 0.15rem 0 0;
     font-weight: 800;
+    overflow-wrap: anywhere;
 }
 
 /* ---- Botones y enlaces -------------------------------------------- */
