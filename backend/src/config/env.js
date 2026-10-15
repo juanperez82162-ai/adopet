@@ -48,6 +48,8 @@ export const config = {
     negocio: {
         umbralMatch: Number(process.env.UMBRAL_MATCH || 60),
         diasProcesoFormal: Number(process.env.DIAS_PROCESO_FORMAL || 15),
-        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT || 7)
+        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT || 7),
+        // Con cuántos días de anticipación se avisa que un trámite está por vencer.
+        diasAvisoVencimiento: Number(process.env.DIAS_AVISO_VENCIMIENTO || 3)
     }
 };

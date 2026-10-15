@@ -15,8 +15,11 @@ import {
     listarInstrumento,
     listarSemaforos,
     listarRespuestas,
-    guardarRespuestas
+    guardarRespuestas,
+    listarNoAtendidos
 } from './seguimientos.repository.js';
+import { notificarAlStaff } from '../notificaciones/notificaciones.service.js';
+import { TIPO } from '../notificaciones/tipos.js';
 
 const ROL_STAFF = 'STAFF';
 const EN_PRUEBA = 3; // ESTADOS_PROCESO
@@ -42,10 +45,12 @@ const esEnteroPositivo = (v) => Number.isInteger(v) && v > 0;
 //   PROGRAMADO  · todavía no llega su fecha
 //   PENDIENTE   · ya llegó y el adoptante está a tiempo de responder
 //   NO_ATENDIDO · pasó el plazo sin respuesta
+//   CERRADO     · sin respuesta, y la adopción ya se cerró (no se pide ni se alerta)
 function estadoDe(f) {
     if (f.FECHA_RESPUESTA) return 'RESPONDIDO';
-    if (f.YA_TOCA !== 'S') return 'PROGRAMADO';
-    return f.EN_PLAZO === 'S' ? 'PENDIENTE' : 'NO_ATENDIDO';
+    if (f.YA_TOCA !== 'S') return f.ID_ESTADO_PROCESO === EN_PRUEBA ? 'PROGRAMADO' : 'CERRADO';
+    if (f.EN_PLAZO !== 'S') return 'NO_ATENDIDO';
+    return f.ID_ESTADO_PROCESO === EN_PRUEBA ? 'PENDIENTE' : 'CERRADO';
 }
 
 function aSeguimiento(f, verEvaluacion) {
@@ -270,5 +275,51 @@ export async function responder(valorId, cuerpo, usuario) {
         throw new ErrorNegocio(409, 'SEGUIMIENTO_YA_RESPONDIDO', 'Ya respondiste este seguimiento.');
     }
 
-    return aSeguimiento(await buscarSeguimiento(fila.ID_SEGUIMIENTO, config.negocio.diasRespuestaCheckpoint), false);
+    const actualizado = await buscarSeguimiento(fila.ID_SEGUIMIENTO, config.negocio.diasRespuestaCheckpoint);
+    await avisarRespuesta(actualizado);
+
+    return aSeguimiento(actualizado, false);
+}
+
+// ---- Alertas al staff ------------------------------------------------------------
+
+const ETAPAS = { DIA_3: 'Día 3', SEMANA_3: 'Semana 3', MES_3: 'Mes 3' };
+const nombreEtapa = (f) => ETAPAS[f.ETAPA] ?? f.ETAPA;
+
+// Avisa al staff que respondieron, y con más prioridad si salió rojo o piden
+// contacto. Si el aviso falla NO se pierde la respuesta del adoptante: ya quedó guardada.
+async function avisarRespuesta(f) {
+    const quien = `${f.NOMBRE_ADOPTANTE} (${f.MASCOTA}, ${nombreEtapa(f)})`;
+
+    try {
+        await notificarAlStaff(TIPO.CHECKPOINT_RESPONDIDO, `${quien} respondió el seguimiento.`, f.ID_SOLICITUD);
+
+        if (f.ID_SEMAFORO === ROJO) {
+            await notificarAlStaff(TIPO.SEGUIMIENTO_ROJO, `Semáforo ROJO: ${quien} necesita atención.`, f.ID_SOLICITUD);
+        }
+
+        if (f.SOLICITA_CONTACTO === 'S') {
+            const telefono = f.TELEFONO ? ` Teléfono: ${f.TELEFONO}.` : '';
+            await notificarAlStaff(TIPO.CONTACTO_SOLICITADO, `${quien} pidió que el albergue lo contacte.${telefono}`, f.ID_SOLICITUD);
+        }
+    } catch (err) {
+        console.error('No se pudo crear la notificación del seguimiento:', err.message);
+    }
+}
+
+// Lo ejecuta el job diario. Devuelve cuántas alertas nuevas creó.
+export async function alertarCheckpointsNoAtendidos() {
+    const filas = await listarNoAtendidos(config.negocio.diasRespuestaCheckpoint);
+    let nuevas = 0;
+
+    for (const f of filas) {
+        try {
+            const mensaje = `${f.NOMBRE_ADOPTANTE} no respondió el seguimiento de ${nombreEtapa(f)} de ${f.MASCOTA} a tiempo.`;
+            if (await notificarAlStaff(TIPO.CHECKPOINT_NO_ATENDIDO, mensaje, f.ID_SOLICITUD)) nuevas += 1;
+        } catch (err) {
+            console.error(`No se pudo alertar el seguimiento ${f.ID_SEGUIMIENTO}:`, err.message);
+        }
+    }
+
+    return nuevas;
 }

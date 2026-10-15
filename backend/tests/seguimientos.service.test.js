@@ -7,11 +7,13 @@ import { simular, reiniciar } from './apoyo.js';
 
 const repo = simular('modules/seguimientos/seguimientos.repository.js', [
     'programarSeguimientos', 'listarSeguimientos', 'buscarSeguimiento', 'listarInstrumento',
-    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas'
+    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas', 'listarNoAtendidos'
 ]);
+const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff']);
+const TIPO = { SEGUIMIENTO_ROJO: 1, CONTACTO_SOLICITADO: 2, CHECKPOINT_NO_ATENDIDO: 3, CHECKPOINT_RESPONDIDO: 6 };
 
 const {
-    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder
+    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder, alertarCheckpointsNoAtendidos
 } = await import('../src/modules/seguimientos/seguimientos.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -57,7 +59,11 @@ async function rechazaCon(promesa, codigoHttp, codigo) {
     await assert.rejects(promesa, (e) => e.codigoHttp === codigoHttp && e.codigo === codigo);
 }
 
-beforeEach(() => reiniciar(repo));
+beforeEach(() => {
+    reiniciar(repo);
+    reiniciar(avisos);
+    avisos.notificarAlStaff.mock.mockImplementation(async () => true);
+});
 
 describe('programarCheckpoints', () => {
     it('programa los seguimientos desde la fecha de entrega y devuelve cuántos creó', async () => {
@@ -91,6 +97,12 @@ describe('estado de un checkpoint', () => {
         assert.equal(await estadoCon({}), 'PENDIENTE');
         assert.equal(await estadoCon({ EN_PLAZO: 'N' }), 'NO_ATENDIDO');
         assert.equal(await estadoCon({ FECHA_RESPUESTA: new Date() }), 'RESPONDIDO');
+    });
+
+    it('los checkpoints sin responder de una adopción cerrada no se piden', async () => {
+        assert.equal(await estadoCon({ ID_ESTADO_PROCESO: 5 }), 'CERRADO');
+        assert.equal(await estadoCon({ ID_ESTADO_PROCESO: 5, YA_TOCA: 'N' }), 'CERRADO');
+        assert.equal(await estadoCon({ ID_ESTADO_PROCESO: 5, EN_PLAZO: 'N' }), 'NO_ATENDIDO');
     });
 });
 
@@ -233,5 +245,67 @@ describe('responder', () => {
     it('si los semáforos no cubren el promedio, avisa en vez de adivinar', async () => {
         repo.listarSemaforos.mock.mockImplementation(async () => []);
         await rechazaCon(responder(5, cuerpo(respuestas(0, 0)), ADOPTANTE), 500, 'SEMAFORO_NO_CONFIGURADO');
+    });
+});
+
+describe('avisos al staff al responder', () => {
+    beforeEach(() => {
+        repo.listarInstrumento.mock.mockImplementation(async () => instrumento());
+        repo.listarSemaforos.mock.mockImplementation(async () => SEMAFOROS);
+        repo.guardarRespuestas.mock.mockImplementation(async () => true);
+    });
+
+    const tipos = () => avisos.notificarAlStaff.mock.calls.map((c) => c.arguments[0]);
+
+    it('siempre avisa que respondieron', async () => {
+        repo.buscarSeguimiento.mock.mockImplementation(async () => fila());
+        await responder(5, { respuestas: respuestas(0, 0), solicitaContacto: false }, ADOPTANTE);
+
+        assert.deepEqual(tipos(), [TIPO.CHECKPOINT_RESPONDIDO]);
+        assert.match(avisos.notificarAlStaff.mock.calls[0].arguments[1], /Ana Pérez.*Luna.*Día 3/);
+        assert.equal(avisos.notificarAlStaff.mock.calls[0].arguments[2], 10);
+    });
+
+    it('si el semáforo es rojo y piden contacto, avisa de ambas cosas', async () => {
+        repo.buscarSeguimiento.mock.mockImplementation(async () => fila({ ID_SEMAFORO: 3, SOLICITA_CONTACTO: 'S' }));
+        await responder(5, { respuestas: respuestas(3, 3), solicitaContacto: true }, ADOPTANTE);
+
+        assert.deepEqual(tipos(), [TIPO.CHECKPOINT_RESPONDIDO, TIPO.SEGUIMIENTO_ROJO, TIPO.CONTACTO_SOLICITADO]);
+        assert.match(avisos.notificarAlStaff.mock.calls[2].arguments[1], /300/);
+    });
+
+    it('si falla el aviso, la respuesta igual queda guardada', async () => {
+        repo.buscarSeguimiento.mock.mockImplementation(async () => fila());
+        avisos.notificarAlStaff.mock.mockImplementation(async () => { throw new Error('boom'); });
+
+        const r = await responder(5, { respuestas: respuestas(0, 0), solicitaContacto: false }, ADOPTANTE);
+        assert.equal(repo.guardarRespuestas.mock.callCount(), 1);
+        assert.equal(r.id, 5);
+    });
+});
+
+describe('alertarCheckpointsNoAtendidos', () => {
+    it('crea una alerta por checkpoint sin responder y cuenta solo las nuevas', async () => {
+        repo.listarNoAtendidos.mock.mockImplementation(async () => [
+            fila({ ID_SEGUIMIENTO: 1, ETAPA: 'DIA_3' }),
+            fila({ ID_SEGUIMIENTO: 2, ETAPA: 'SEMANA_3' })
+        ]);
+        let llamada = 0;
+        avisos.notificarAlStaff.mock.mockImplementation(async () => (llamada += 1) === 1);
+
+        assert.equal(await alertarCheckpointsNoAtendidos(), 1);
+        assert.equal(avisos.notificarAlStaff.mock.calls[0].arguments[0], TIPO.CHECKPOINT_NO_ATENDIDO);
+        assert.match(avisos.notificarAlStaff.mock.calls[1].arguments[1], /Semana 3/);
+    });
+
+    it('un fallo en una alerta no detiene las demás', async () => {
+        repo.listarNoAtendidos.mock.mockImplementation(async () => [fila({ ID_SEGUIMIENTO: 1 }), fila({ ID_SEGUIMIENTO: 2 })]);
+        let llamada = 0;
+        avisos.notificarAlStaff.mock.mockImplementation(async () => {
+            if ((llamada += 1) === 1) throw new Error('boom');
+            return true;
+        });
+
+        assert.equal(await alertarCheckpointsNoAtendidos(), 1);
     });
 });

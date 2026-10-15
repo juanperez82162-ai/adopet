@@ -393,3 +393,34 @@ export async function cerrarPrueba(idSolicitud, idEstadoNuevo, documentoStaff, o
         return r.rowsAffected;
     });
 }
+
+// ---- Alertas -------------------------------------------------------------
+
+// Trámites ACTIVO cuyo plazo vence en los próximos `dias` días.
+export async function listarPorVencer(dias) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `${SELECT_SOLICITUD}
+              WHERE s.ID_ESTADO_PROCESO = 2
+                AND s.FECHA_VENCIMIENTO >= SYSDATE
+                AND s.FECHA_VENCIMIENTO < SYSDATE + :dias
+              ORDER BY s.FECHA_VENCIMIENTO`,
+            { dias }
+        );
+        return r.rows;
+    });
+}
+
+// Adopciones EN_PRUEBA cuyo periodo ya se cumplió y esperan confirmación.
+export async function listarPruebasCumplidas() {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `${SELECT_SOLICITUD}
+              WHERE s.ID_ESTADO_PROCESO = 3
+                AND SYSDATE >= s.FECHA_ENTREGA
+                    + (SELECT MAX(DIAS_DESDE_ENTREGA) FROM ETAPAS_SEGUIMIENTO WHERE ACTIVO = 'S')
+              ORDER BY s.FECHA_ENTREGA`
+        );
+        return r.rows;
+    });
+}

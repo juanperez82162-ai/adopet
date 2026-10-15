@@ -8,7 +8,8 @@ const ESTADOS = {
     PROGRAMADO: 'Programado',
     PENDIENTE: 'Por responder',
     RESPONDIDO: 'Respondido',
-    NO_ATENDIDO: 'Sin respuesta'
+    NO_ATENDIDO: 'Sin respuesta',
+    CERRADO: 'Cerrado'
 };
 
 export const etiquetaEstadoSeguimiento = (estado) => ESTADOS[estado] ?? estado;
@@ -18,7 +19,8 @@ const CLASES_ESTADO = {
     PROGRAMADO: 'estado-vencido',
     PENDIENTE: 'estado-pendiente',
     RESPONDIDO: 'estado-activo',
-    NO_ATENDIDO: 'estado-cancelado'
+    NO_ATENDIDO: 'estado-cancelado',
+    CERRADO: 'estado-vencido'
 };
 
 export const claseEstadoSeguimiento = (estado) =>

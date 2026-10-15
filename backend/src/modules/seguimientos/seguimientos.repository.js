@@ -167,3 +167,19 @@ export async function guardarRespuestas(d) {
         return true;
     });
 }
+
+// Checkpoints de adopciones EN_PRUEBA (3) que nadie respondió y cuyo plazo ya
+// terminó. Los de trámites cerrados no se alertan.
+export async function listarNoAtendidos(diasPlazo) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `${SELECT_SEGUIMIENTO}
+              WHERE s.ID_ESTADO_PROCESO = 3
+                AND sg.FECHA_RESPUESTA IS NULL
+                AND TRUNC(SYSDATE) > sg.FECHA_PROGRAMADA + :diasPlazo
+              ORDER BY sg.FECHA_PROGRAMADA, sg.ID_SEGUIMIENTO`,
+            { diasPlazo }
+        );
+        return r.rows;
+    });
+}

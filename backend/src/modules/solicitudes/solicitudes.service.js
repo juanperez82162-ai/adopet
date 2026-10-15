@@ -25,7 +25,9 @@ import {
     extenderPlazo,
     listarVencidas,
     marcarVencida,
-    cerrarPrueba
+    cerrarPrueba,
+    listarPorVencer,
+    listarPruebasCumplidas
 } from './solicitudes.repository.js';
 import {
     reservarMascotaParaProceso,
@@ -38,6 +40,8 @@ import {
     revertirDevolucionDeMascota
 } from '../mascotas/mascotas.service.js';
 import { programarCheckpoints } from '../seguimientos/seguimientos.service.js';
+import { notificarAlStaff } from '../notificaciones/notificaciones.service.js';
+import { TIPO } from '../notificaciones/tipos.js';
 import { PERFIL_VETADO } from '../../utils/perfiles.js';
 import { mejoresCoincidencias, calcularMatch } from './match.js';
 
@@ -716,4 +720,42 @@ export async function cerrarPeriodoPrueba(valorId, cuerpo, usuario) {
     }
 
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
+}
+
+// ---- Alertas al staff (las ejecuta el job diario) ----------------------------
+
+const fechaCorta = (fecha) => fecha.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' });
+
+// Trámites activos que vencen en los próximos días. Devuelve cuántas alertas nuevas creó.
+export async function alertarTramitesPorVencer() {
+    const filas = await listarPorVencer(config.negocio.diasAvisoVencimiento);
+    let nuevas = 0;
+
+    for (const f of filas) {
+        try {
+            const mensaje = `El trámite de ${f.MASCOTA} con ${f.NOMBRE_ADOPTANTE} vence el ${fechaCorta(f.FECHA_VENCIMIENTO)}.`;
+            if (await notificarAlStaff(TIPO.TRAMITE_POR_VENCER, mensaje, f.ID_SOLICITUD)) nuevas += 1;
+        } catch (err) {
+            console.error(`No se pudo alertar la solicitud ${f.ID_SOLICITUD}:`, err.message);
+        }
+    }
+
+    return nuevas;
+}
+
+// Periodos de prueba cumplidos que esperan la confirmación del staff.
+export async function alertarPruebasCumplidas() {
+    const filas = await listarPruebasCumplidas();
+    let nuevas = 0;
+
+    for (const f of filas) {
+        try {
+            const mensaje = `El periodo de prueba de ${f.MASCOTA} con ${f.NOMBRE_ADOPTANTE} ya se cumplió. Revisa los seguimientos y confirma la adopción.`;
+            if (await notificarAlStaff(TIPO.PRUEBA_CUMPLIDA, mensaje, f.ID_SOLICITUD)) nuevas += 1;
+        } catch (err) {
+            console.error(`No se pudo alertar la solicitud ${f.ID_SOLICITUD}:`, err.message);
+        }
+    }
+
+    return nuevas;
 }

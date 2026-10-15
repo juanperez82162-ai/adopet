@@ -1,12 +1,13 @@
 import '../solicitudes.css';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
 import { formatearFecha } from '../../mascotas/mascotas.formatos.js';
 import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
 import { IconoLupa, IconoSolicitud } from '../../../componentes/Iconos.jsx';
 import { DetalleSolicitud } from '../componentes/DetalleSolicitud.jsx';
-import { listarSolicitudes } from '../solicitudes.api.js';
+import { listarSolicitudes, obtenerSolicitud } from '../solicitudes.api.js';
 import { claseEstadoProceso, etiquetaEstadoProceso } from '../solicitudes.formatos.js';
 
 // Debe coincidir con OPCIONES_MENU.NOMBRE_OPCION.
@@ -27,6 +28,8 @@ export function Solicitudes() {
     const [error, setError] = useState('');
     const [aviso, setAviso] = useState('');
     const [elegida, setElegida] = useState(null);
+    const [parametros, setParametros] = useSearchParams();
+    const idAbrir = parametros.get('abrir');
 
     useEffect(() => {
         let vigente = true;
@@ -39,6 +42,22 @@ export function Solicitudes() {
             vigente = false;
         };
     }, []);
+
+    // Un enlace desde una notificación (?abrir=ID) abre directamente esa solicitud.
+    useEffect(() => {
+        if (!idAbrir) return undefined;
+
+        let vigente = true;
+
+        obtenerSolicitud(idAbrir)
+            .then((datos) => vigente && setElegida(datos))
+            .catch((err) => vigente && setError(err.message))
+            .finally(() => vigente && setParametros({}, { replace: true }));
+
+        return () => {
+            vigente = false;
+        };
+    }, [idAbrir, setParametros]);
 
     useEffect(() => {
         let vigente = true;

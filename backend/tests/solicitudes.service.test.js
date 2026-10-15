@@ -8,18 +8,20 @@ const repo = simular('modules/solicitudes/solicitudes.repository.js', [
     'listarTiposVivienda', 'listarTiemposDisponibles', 'listarEspecies', 'listarMascotasAdoptables',
     'buscarMascotaParaSolicitud', 'buscarOpcionVivienda', 'buscarOpcionTiempo', 'insertarSolicitud',
     'listarSolicitudes', 'buscarSolicitud', 'formalizarSolicitud', 'cancelarSolicitud',
-    'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida', 'cerrarPrueba'
+    'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida', 'cerrarPrueba',
+    'listarPorVencer', 'listarPruebasCumplidas'
 ]);
 const mascotas = simular('modules/mascotas/mascotas.service.js', [
     'reservarMascotaParaProceso', 'liberarMascotaDeProceso', 'pasarMascotaAPrueba', 'revertirMascotaAProceso',
     'marcarMascotaAdoptada', 'devolverMascotaAlAlbergue', 'revertirMascotaAdoptada', 'revertirDevolucionDeMascota'
 ]);
 const seguimientos = simular('modules/seguimientos/seguimientos.service.js', ['programarCheckpoints']);
+const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff']);
 
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
     obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia,
-    entregar, extender, vencerSolicitudes, cerrarPeriodoPrueba, MAXIMO_DIAS_EXTENSION
+    entregar, extender, vencerSolicitudes, cerrarPeriodoPrueba, alertarTramitesPorVencer, alertarPruebasCumplidas, MAXIMO_DIAS_EXTENSION
 } =
     await import('../src/modules/solicitudes/solicitudes.service.js');
 
@@ -45,6 +47,7 @@ beforeEach(() => {
     reiniciar(repo);
     reiniciar(mascotas);
     reiniciar(seguimientos);
+    reiniciar(avisos);
     repo.buscarOpcionVivienda.mock.mockImplementation(async () => opcionNormal);
     repo.buscarOpcionTiempo.mock.mockImplementation(async () => ({ ID: 3, NIVEL: 3, ES_OTRO: 'N' }));
 });
@@ -624,5 +627,47 @@ describe('cerrarPeriodoPrueba', () => {
 
         await assert.rejects(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), /boom/);
         assert.equal(mascotas.revertirMascotaAdoptada.mock.callCount(), 1);
+    });
+});
+
+describe('alertas al staff', () => {
+    beforeEach(() => {
+        avisos.notificarAlStaff.mock.mockImplementation(async () => true);
+    });
+
+    it('avisa de los trámites por vencer y cuenta las alertas nuevas', async () => {
+        repo.listarPorVencer.mock.mockImplementation(async () => [filaSolicitud({ ...ACTIVA, FECHA_VENCIMIENTO: FUTURO })]);
+
+        assert.equal(await alertarTramitesPorVencer(), 1);
+        assert.equal(repo.listarPorVencer.mock.calls[0].arguments[0], 3);
+        const [tipo, mensaje, idSolicitud] = avisos.notificarAlStaff.mock.calls[0].arguments;
+        assert.equal(tipo, 4);
+        assert.match(mensaje, /Luna.*Ana Pérez.*vence/);
+        assert.equal(idSolicitud, 10);
+    });
+
+    it('avisa de los periodos de prueba cumplidos', async () => {
+        repo.listarPruebasCumplidas.mock.mockImplementation(async () => [filaSolicitud({ ID_ESTADO_PROCESO: 3, ESTADO: 'EN_PRUEBA' })]);
+
+        assert.equal(await alertarPruebasCumplidas(), 1);
+        assert.equal(avisos.notificarAlStaff.mock.calls[0].arguments[0], 5);
+    });
+
+    it('no cuenta las que ya estaban avisadas', async () => {
+        repo.listarPruebasCumplidas.mock.mockImplementation(async () => [filaSolicitud()]);
+        avisos.notificarAlStaff.mock.mockImplementation(async () => false);
+
+        assert.equal(await alertarPruebasCumplidas(), 0);
+    });
+
+    it('un fallo en una alerta no detiene las demás', async () => {
+        repo.listarPruebasCumplidas.mock.mockImplementation(async () => [filaSolicitud({ ID_SOLICITUD: 1 }), filaSolicitud({ ID_SOLICITUD: 2 })]);
+        let llamada = 0;
+        avisos.notificarAlStaff.mock.mockImplementation(async () => {
+            if ((llamada += 1) === 1) throw new Error('boom');
+            return true;
+        });
+
+        assert.equal(await alertarPruebasCumplidas(), 1);
     });
 });
