@@ -76,7 +76,7 @@ export async function listarSeguimientos(filtros, diasPlazo) {
         const donde = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
 
         const r = await conexion.execute(
-            `${SELECT_SEGUIMIENTO} ${donde} ORDER BY sg.FECHA_PROGRAMADA, sg.ID_SEGUIMIENTO`,
+            `${SELECT_SEGUIMIENTO} ${donde} ORDER BY sg.ID_SOLICITUD DESC, sg.FECHA_PROGRAMADA, sg.ID_SEGUIMIENTO`,
             valores
         );
         return r.rows;
