@@ -14,6 +14,21 @@ const ETIQUETAS = {
 
 export const etiquetaEstadoProceso = (nombre) => ETIQUETAS[nombre] ?? nombre;
 
+// Clase de color de la insignia de cada estado (estilos en solicitudes.css).
+const CLASES = {
+    SOLICITUD: 'estado-pendiente',
+    ACTIVO: 'estado-activo',
+    EN_PRUEBA: 'estado-prueba',
+    FINALIZADO: 'estado-finalizado',
+    FALLIDO: 'estado-cancelado',
+    VENCIDO: 'estado-vencido',
+    CANCELADO_ADOPTANTE: 'estado-cancelado',
+    CANCELADO_STAFF: 'estado-cancelado',
+    CANCELADO_OTROS: 'estado-cancelado'
+};
+
+export const claseEstadoProceso = (nombre) => `insignia estado-proceso ${CLASES[nombre] ?? ''}`.trim();
+
 // Quién cancela: ids fijos de ESTADOS_PROCESO.
 export const OPCIONES_CANCELACION = [
     { id: 7, texto: 'El adoptante ya no quiere seguir' },

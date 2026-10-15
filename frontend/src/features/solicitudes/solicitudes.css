@@ -142,3 +142,46 @@
     border-radius: var(--radio);
     background: var(--crema);
 }
+
+/* Colores por estado del proceso: se leen de un vistazo.
+   Naranja = espera · verde = avanza · azul = en prueba · rojo = se cayó. */
+
+.insignia.estado-proceso::before {
+    content: '';
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    margin-right: 0.4rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.insignia.estado-pendiente {
+    background: var(--naranja-suave);
+    color: #9a4a1c;
+}
+
+.insignia.estado-activo {
+    background: var(--salvia-suave);
+    color: #3f6b2c;
+}
+
+.insignia.estado-prueba {
+    background: #e1eefa;
+    color: #25598a;
+}
+
+.insignia.estado-finalizado {
+    background: #cfe6c4;
+    color: #2d5a1c;
+}
+
+.insignia.estado-vencido {
+    background: #efe6d8;
+    color: #7a5a22;
+}
+
+.insignia.estado-cancelado {
+    background: var(--error-suave);
+    color: var(--error);
+}

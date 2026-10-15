@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FotoMascota } from '../../mascotas/componentes/FotoMascota.jsx';
 import { formatearFecha } from '../../mascotas/mascotas.formatos.js';
 import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud } from '../solicitudes.api.js';
-import { aSiNo, etiquetaEstadoProceso, OPCIONES_CANCELACION } from '../solicitudes.formatos.js';
+import { aSiNo, claseEstadoProceso, etiquetaEstadoProceso, OPCIONES_CANCELACION } from '../solicitudes.formatos.js';
 
 const LARGO_MOTIVO = 500; // SOLICITUDES_ADOPCION.OBSERVACIONES
 
@@ -69,7 +69,7 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, alCambiar, alCerra
                 <div>
                     <h2>{s.mascota}</h2>
                     <p className="texto-suave">Solicitada por {s.adoptante} · documento {s.documento}</p>
-                    <span className="insignia">{etiquetaEstadoProceso(s.estado)}</span>
+                    <span className={claseEstadoProceso(s.estado)}>{etiquetaEstadoProceso(s.estado)}</span>
                 </div>
             </div>
 

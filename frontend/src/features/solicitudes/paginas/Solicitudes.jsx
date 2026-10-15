@@ -7,7 +7,7 @@ import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
 import { IconoLupa, IconoSolicitud } from '../../../componentes/Iconos.jsx';
 import { DetalleSolicitud } from '../componentes/DetalleSolicitud.jsx';
 import { listarSolicitudes } from '../solicitudes.api.js';
-import { etiquetaEstadoProceso } from '../solicitudes.formatos.js';
+import { claseEstadoProceso, etiquetaEstadoProceso } from '../solicitudes.formatos.js';
 
 // Debe coincidir con OPCIONES_MENU.NOMBRE_OPCION.
 const OPCION = 'SOLICITUDES';
@@ -174,7 +174,7 @@ export function Solicitudes() {
                                     <td>{s.mascota}</td>
                                     {esStaff && <td>{s.adoptante}<br /><small className="texto-suave">{s.documento}</small></td>}
                                     <td>{formatearFecha(s.fechaEnvio)}</td>
-                                    <td><span className="insignia">{etiquetaEstadoProceso(s.estado)}</span></td>
+                                    <td><span className={claseEstadoProceso(s.estado)}>{etiquetaEstadoProceso(s.estado)}</span></td>
                                     <td>{s.conCuestionario ? 'Sí' : 'No'}</td>
                                     <td>
                                         <button type="button" className="boton boton-secundario boton-pequeno" onClick={() => abrir(s)}>
