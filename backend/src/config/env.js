@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -33,6 +35,15 @@ export const config = {
 
     // Dirección del frontend, para armar los enlaces que van en los correos.
     frontendUrl: (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, ''),
+
+    // Carpeta donde se guardan las fotos de las mascotas (fuera de git).
+    // Si no es una ruta absoluta, se cuenta desde la carpeta backend/.
+    fotos: {
+        carpeta: path.resolve(
+            fileURLToPath(new URL('../../', import.meta.url)),
+            process.env.UPLOADS_DIR || 'uploads'
+        )
+    },
 
     negocio: {
         umbralMatch: Number(process.env.UMBRAL_MATCH),

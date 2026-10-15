@@ -13,6 +13,7 @@ import { MiPerfil } from '../features/usuarios/paginas/MiPerfil.jsx';
 import { Usuarios } from '../features/usuarios/paginas/Usuarios.jsx';
 import { DetalleUsuario } from '../features/usuarios/paginas/DetalleUsuario.jsx';
 import { Accesos } from '../features/accesos/paginas/Accesos.jsx';
+import { Mascotas } from '../features/mascotas/paginas/Mascotas.jsx';
 
 export function Rutas() {
     return (
@@ -45,6 +46,10 @@ export function Rutas() {
                 <Route
                     path="/accesos"
                     element={<RequiereModulo opcion="ACCESOS"><Accesos /></RequiereModulo>}
+                />
+                <Route
+                    path="/mascotas"
+                    element={<RequiereModulo opcion="MASCOTAS"><Mascotas /></RequiereModulo>}
                 />
                 {/* Cada módulo agrega aquí su ruta cuando exista su pantalla. */}
                 <Route path="*" element={<PaginaPendiente />} />
