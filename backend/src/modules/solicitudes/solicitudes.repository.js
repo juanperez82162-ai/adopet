@@ -340,11 +340,12 @@ export async function extenderPlazo(idSolicitud, dias, observaciones) {
 export async function listarVencidas() {
     return conConexion(async (conexion) => {
         const r = await conexion.execute(
-            `SELECT ID_SOLICITUD, ID_MASCOTA
-               FROM SOLICITUDES_ADOPCION
-              WHERE ID_ESTADO_PROCESO = 2
-                AND FECHA_VENCIMIENTO < SYSDATE
-              ORDER BY ID_SOLICITUD`
+            `SELECT s.ID_SOLICITUD, s.ID_MASCOTA, s.DOCUMENTO, m.NOMBRE AS MASCOTA
+               FROM SOLICITUDES_ADOPCION s
+               JOIN MASCOTAS m ON m.ID_MASCOTA = s.ID_MASCOTA
+              WHERE s.ID_ESTADO_PROCESO = 2
+                AND s.FECHA_VENCIMIENTO < SYSDATE
+              ORDER BY s.ID_SOLICITUD`
         );
         return r.rows;
     });

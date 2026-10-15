@@ -16,9 +16,10 @@ import {
     listarSemaforos,
     listarRespuestas,
     guardarRespuestas,
-    listarNoAtendidos
+    listarNoAtendidos,
+    listarPendientes
 } from './seguimientos.repository.js';
-import { notificarAlStaff } from '../notificaciones/notificaciones.service.js';
+import { notificarAlStaff, notificarAlAdoptante } from '../notificaciones/notificaciones.service.js';
 import { TIPO } from '../notificaciones/tipos.js';
 
 const ROL_STAFF = 'STAFF';
@@ -318,6 +319,25 @@ export async function alertarCheckpointsNoAtendidos() {
             if (await notificarAlStaff(TIPO.CHECKPOINT_NO_ATENDIDO, mensaje, f.ID_SOLICITUD)) nuevas += 1;
         } catch (err) {
             console.error(`No se pudo alertar el seguimiento ${f.ID_SEGUIMIENTO}:`, err.message);
+        }
+    }
+
+    return nuevas;
+}
+
+const fechaCorta = (fecha) => (fecha ? fecha.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }) : 'la fecha límite');
+
+// Lo ejecuta el job diario: le avisa a cada adoptante que ya puede responder.
+export async function alertarCheckpointsDisponibles() {
+    const filas = await listarPendientes(config.negocio.diasRespuestaCheckpoint);
+    let nuevas = 0;
+
+    for (const f of filas) {
+        try {
+            const mensaje = `Ya puedes responder el seguimiento de ${nombreEtapa(f)} de ${f.MASCOTA}. Tienes hasta el ${fechaCorta(f.FECHA_LIMITE)}.`;
+            if (await notificarAlAdoptante(f.DOCUMENTO, TIPO.CHECKPOINT_DISPONIBLE, mensaje, f.ID_SOLICITUD)) nuevas += 1;
+        } catch (err) {
+            console.error(`No se pudo avisar el seguimiento ${f.ID_SEGUIMIENTO}:`, err.message);
         }
     }
 

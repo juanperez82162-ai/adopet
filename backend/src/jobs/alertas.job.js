@@ -1,14 +1,15 @@
-// JOB de alertas al staff: avisa de checkpoints sin responder, trámites por
+// JOB de alertas: avisa a los adoptantes de los seguimientos que ya pueden responder y al staff de checkpoints sin responder, trámites por
 // vencer y periodos de prueba cumplidos. Cada alerta se crea una sola vez, así
 // que puede correr cuantas veces haga falta. Corre al arrancar el servidor y
 // luego todos los días a las 07:00, hora de Bogotá. La lógica está en los
 // services; aquí solo se agenda.
 
 import cron from 'node-cron';
-import { alertarCheckpointsNoAtendidos } from '../modules/seguimientos/seguimientos.service.js';
+import { alertarCheckpointsNoAtendidos, alertarCheckpointsDisponibles } from '../modules/seguimientos/seguimientos.service.js';
 import { alertarTramitesPorVencer, alertarPruebasCumplidas } from '../modules/solicitudes/solicitudes.service.js';
 
 const ALERTAS = [
+    ['seguimientos por responder (adoptantes)', alertarCheckpointsDisponibles],
     ['checkpoints sin responder', alertarCheckpointsNoAtendidos],
     ['trámites por vencer', alertarTramitesPorVencer],
     ['periodos de prueba cumplidos', alertarPruebasCumplidas]

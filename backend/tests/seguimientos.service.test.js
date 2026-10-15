@@ -7,13 +7,13 @@ import { simular, reiniciar } from './apoyo.js';
 
 const repo = simular('modules/seguimientos/seguimientos.repository.js', [
     'programarSeguimientos', 'listarSeguimientos', 'buscarSeguimiento', 'listarInstrumento',
-    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas', 'listarNoAtendidos'
+    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas', 'listarNoAtendidos', 'listarPendientes'
 ]);
-const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff']);
+const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff', 'notificarAlAdoptante']);
 const TIPO = { SEGUIMIENTO_ROJO: 1, CONTACTO_SOLICITADO: 2, CHECKPOINT_NO_ATENDIDO: 3, CHECKPOINT_RESPONDIDO: 6 };
 
 const {
-    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder, alertarCheckpointsNoAtendidos
+    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder, alertarCheckpointsNoAtendidos, alertarCheckpointsDisponibles
 } = await import('../src/modules/seguimientos/seguimientos.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -307,5 +307,26 @@ describe('alertarCheckpointsNoAtendidos', () => {
         });
 
         assert.equal(await alertarCheckpointsNoAtendidos(), 1);
+    });
+});
+
+describe('alertarCheckpointsDisponibles', () => {
+    it('le avisa a cada adoptante que ya puede responder', async () => {
+        repo.listarPendientes.mock.mockImplementation(async () => [fila({ DOCUMENTO: '2', FECHA_LIMITE: new Date() })]);
+        avisos.notificarAlAdoptante.mock.mockImplementation(async () => true);
+
+        assert.equal(await alertarCheckpointsDisponibles(), 1);
+        const [documento, tipo, mensaje, idSolicitud] = avisos.notificarAlAdoptante.mock.calls[0].arguments;
+        assert.equal(documento, '2');
+        assert.equal(tipo, 9);
+        assert.match(mensaje, /Día 3 de Luna/);
+        assert.equal(idSolicitud, 10);
+    });
+
+    it('no cuenta los que ya estaban avisados', async () => {
+        repo.listarPendientes.mock.mockImplementation(async () => [fila()]);
+        avisos.notificarAlAdoptante.mock.mockImplementation(async () => false);
+
+        assert.equal(await alertarCheckpointsDisponibles(), 0);
     });
 });

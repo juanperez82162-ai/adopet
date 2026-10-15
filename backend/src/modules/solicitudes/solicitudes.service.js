@@ -40,7 +40,7 @@ import {
     revertirDevolucionDeMascota
 } from '../mascotas/mascotas.service.js';
 import { programarCheckpoints } from '../seguimientos/seguimientos.service.js';
-import { notificarAlStaff } from '../notificaciones/notificaciones.service.js';
+import { notificarAlStaff, notificarAlAdoptante } from '../notificaciones/notificaciones.service.js';
 import { TIPO } from '../notificaciones/tipos.js';
 import { PERFIL_VETADO } from '../../utils/perfiles.js';
 import { mejoresCoincidencias, calcularMatch } from './match.js';
@@ -65,6 +65,18 @@ const CANCELADO_ADOPTANTE = 7;
 const CANCELADO_STAFF = 8;
 const CANCELADO_OTROS = 9;
 const ESTADOS_CANCELACION = [CANCELADO_ADOPTANTE, CANCELADO_STAFF, CANCELADO_OTROS];
+
+const fechaCorta = (fecha) => (fecha ? fecha.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' }) : 'la fecha límite');
+
+// Avisa al adoptante de un cambio en su solicitud. Si el aviso falla NO se
+// deshace el cambio: ya quedó guardado y el aviso es solo informativo.
+async function avisarAdoptante(documento, idTipo, mensaje, idSolicitud) {
+    try {
+        await notificarAlAdoptante(documento, idTipo, mensaje, idSolicitud);
+    } catch (err) {
+        console.error('No se pudo crear la notificación del adoptante:', err.message);
+    }
+}
 
 // Debe coincidir con el tamaño de SOLICITUDES_ADOPCION.OBSERVACIONES.
 export const LARGO_MAXIMO_MOTIVO = 500;
@@ -499,7 +511,15 @@ export async function formalizar(valorId, cuerpo, usuario) {
         throw err;
     }
 
-    return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
+    const formalizada = await buscarSolicitud(fila.ID_SOLICITUD);
+
+    await avisarAdoptante(
+        fila.DOCUMENTO, TIPO.SOLICITUD_FORMALIZADA,
+        `Tu solicitud para adoptar a ${fila.MASCOTA} pasó a trámite activo. Tienes hasta el ${fechaCorta(formalizada.FECHA_VENCIMIENTO)} para concretarla.`,
+        fila.ID_SOLICITUD
+    );
+
+    return aSolicitud(formalizada, true);
 }
 
 // Cierra una solicitud abierta (SOLICITUD o ACTIVO) con un motivo. Si estaba
@@ -530,6 +550,15 @@ export async function cancelar(valorId, cuerpo, usuario) {
 
     if (fila.ID_ESTADO_PROCESO === ACTIVO) {
         await liberarMascotaDeProceso(fila.ID_MASCOTA);
+    }
+
+    // Si la cancela el propio adoptante por teléfono, ya lo sabe: no se le avisa.
+    if (idEstadoNuevo !== CANCELADO_ADOPTANTE) {
+        await avisarAdoptante(
+            fila.DOCUMENTO, TIPO.TRAMITE_CERRADO,
+            `Tu solicitud para adoptar a ${fila.MASCOTA} se canceló. Puedes comunicarte con el albergue o enviar una nueva.`,
+            fila.ID_SOLICITUD
+        );
     }
 
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
@@ -616,6 +645,12 @@ export async function entregar(valorId, usuario) {
         throw err;
     }
 
+    await avisarAdoptante(
+        fila.DOCUMENTO, TIPO.PRUEBA_INICIADA,
+        `Empezó el periodo de prueba de ${fila.MASCOTA}. Te avisaremos cuando debas responder cada seguimiento.`,
+        fila.ID_SOLICITUD
+    );
+
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
 }
 
@@ -655,11 +690,17 @@ export async function vencerSolicitudes() {
     const candidatas = await listarVencidas();
     let vencidas = 0;
 
-    for (const { ID_SOLICITUD: id, ID_MASCOTA: idMascota } of candidatas) {
+    for (const { ID_SOLICITUD: id, ID_MASCOTA: idMascota, DOCUMENTO: documento, MASCOTA: mascota } of candidatas) {
         try {
             if ((await marcarVencida(id)) === 1) {
                 await liberarMascotaDeProceso(idMascota);
                 vencidas += 1;
+
+                await avisarAdoptante(
+                    documento, TIPO.TRAMITE_CERRADO,
+                    `El plazo de tu trámite para adoptar a ${mascota} se cumplió y se cerró. Comunícate con el albergue si aún quieres adoptar.`,
+                    id
+                );
             }
         } catch (err) {
             console.error(`No se pudo vencer la solicitud ${id}:`, err.message);
@@ -719,12 +760,18 @@ export async function cerrarPeriodoPrueba(valorId, cuerpo, usuario) {
         throw new ErrorNegocio(409, 'SOLICITUD_NO_EN_PRUEBA', 'La solicitud cambió de estado. Actualiza la lista.');
     }
 
+    await avisarAdoptante(
+        fila.DOCUMENTO, exito ? TIPO.ADOPCION_CONFIRMADA : TIPO.TRAMITE_CERRADO,
+        exito
+            ? `¡Felicidades! La adopción de ${fila.MASCOTA} quedó confirmada. Gracias por darle un hogar.`
+            : `Se cerró el periodo de prueba de ${fila.MASCOTA}. Puedes comunicarte con el albergue si tienes dudas.`,
+        fila.ID_SOLICITUD
+    );
+
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
 }
 
 // ---- Alertas al staff (las ejecuta el job diario) ----------------------------
-
-const fechaCorta = (fecha) => fecha.toLocaleDateString('es-CO', { timeZone: 'America/Bogota' });
 
 // Trámites activos que vencen en los próximos días. Devuelve cuántas alertas nuevas creó.
 export async function alertarTramitesPorVencer() {

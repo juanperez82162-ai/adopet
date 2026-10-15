@@ -10,7 +10,7 @@ const repo = simular('modules/notificaciones/notificaciones.repository.js', [
 ]);
 
 const {
-    notificarAlStaff, obtenerNotificaciones, obtenerContador, marcarComoLeida, marcarTodasComoLeidas,
+    notificarAlStaff, notificarAlAdoptante, obtenerNotificaciones, obtenerContador, marcarComoLeida, marcarTodasComoLeidas,
     TIPO, LARGO_MAXIMO_MENSAJE
 } = await import('../src/modules/notificaciones/notificaciones.service.js');
 
@@ -42,6 +42,16 @@ describe('notificarAlStaff', () => {
         await notificarAlStaff(TIPO.PRUEBA_CUMPLIDA, 'x'.repeat(400), 10);
 
         assert.equal(repo.insertarSiNoExiste.mock.calls[0].arguments[0].mensaje.length, LARGO_MAXIMO_MENSAJE);
+    });
+});
+
+describe('notificarAlAdoptante', () => {
+    it('crea el aviso en la bandeja personal del adoptante', async () => {
+        repo.insertarSiNoExiste.mock.mockImplementation(async () => 1);
+
+        assert.equal(await notificarAlAdoptante('2', TIPO.CHECKPOINT_DISPONIBLE, 'Mensaje', 10), true);
+        assert.deepEqual(repo.insertarSiNoExiste.mock.calls[0].arguments[0],
+            { documento: '2', idTipo: 9, mensaje: 'Mensaje', idSolicitud: 10 });
     });
 });
 

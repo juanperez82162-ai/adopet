@@ -2,7 +2,7 @@
 // - Los otros módulos llaman a notificar() cuando pasa algo que el staff debe
 //   saber. Todas las alertas van al staff como equipo (bandeja compartida):
 //   si alguien la marca como leída, queda leída para todos.
-// - El adoptante solo vería avisos dirigidos a él (hoy no se generan).
+// - El adoptante ve los avisos dirigidos a él: cambios de su solicitud y seguimientos por responder.
 // Nunca llama al repository de otro módulo.
 
 import { ErrorNegocio } from '../../utils/errores.js';
@@ -25,13 +25,18 @@ const ROL_STAFF = 'STAFF';
 // Destinatario según quién consulta: el staff ve la bandeja compartida (NULL).
 const destinatarioDe = (usuario) => (usuario.rol === ROL_STAFF ? null : usuario.documento);
 
-// Crea un aviso para el staff. Devuelve true si se creó y false si ya existía.
-export async function notificarAlStaff(idTipo, mensaje, idSolicitud) {
-    const texto = mensaje.length > LARGO_MAXIMO_MENSAJE
-        ? `${mensaje.slice(0, LARGO_MAXIMO_MENSAJE - 1)}…`
-        : mensaje;
+function recortar(mensaje) {
+    return mensaje.length > LARGO_MAXIMO_MENSAJE ? `${mensaje.slice(0, LARGO_MAXIMO_MENSAJE - 1)}…` : mensaje;
+}
 
-    return (await insertarSiNoExiste({ documento: null, idTipo, mensaje: texto, idSolicitud })) === 1;
+// Crea un aviso para el staff como equipo. Devuelve true si se creó y false si ya existía.
+export async function notificarAlStaff(idTipo, mensaje, idSolicitud) {
+    return (await insertarSiNoExiste({ documento: null, idTipo, mensaje: recortar(mensaje), idSolicitud })) === 1;
+}
+
+// Crea un aviso en la bandeja personal de un adoptante. Mismo contrato que el anterior.
+export async function notificarAlAdoptante(documento, idTipo, mensaje, idSolicitud) {
+    return (await insertarSiNoExiste({ documento, idTipo, mensaje: recortar(mensaje), idSolicitud })) === 1;
 }
 
 export async function obtenerNotificaciones(usuario) {

@@ -16,7 +16,7 @@ const mascotas = simular('modules/mascotas/mascotas.service.js', [
     'marcarMascotaAdoptada', 'devolverMascotaAlAlbergue', 'revertirMascotaAdoptada', 'revertirDevolucionDeMascota'
 ]);
 const seguimientos = simular('modules/seguimientos/seguimientos.service.js', ['programarCheckpoints']);
-const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff']);
+const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff', 'notificarAlAdoptante']);
 
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
@@ -48,6 +48,7 @@ beforeEach(() => {
     reiniciar(mascotas);
     reiniciar(seguimientos);
     reiniciar(avisos);
+    avisos.notificarAlAdoptante.mock.mockImplementation(async () => true);
     repo.buscarOpcionVivienda.mock.mockImplementation(async () => opcionNormal);
     repo.buscarOpcionTiempo.mock.mockImplementation(async () => ({ ID: 3, NIVEL: 3, ES_OTRO: 'N' }));
 });
@@ -669,5 +670,75 @@ describe('alertas al staff', () => {
         });
 
         assert.equal(await alertarPruebasCumplidas(), 1);
+    });
+});
+
+describe('avisos al adoptante', () => {
+    const tiposAvisados = () => avisos.notificarAlAdoptante.mock.calls.map((c) => c.arguments[1]);
+
+    beforeEach(() => {
+        mascotas.reservarMascotaParaProceso.mock.mockImplementation(async () => true);
+        mascotas.liberarMascotaDeProceso.mock.mockImplementation(async () => true);
+        mascotas.marcarMascotaAdoptada.mock.mockImplementation(async () => true);
+        mascotas.devolverMascotaAlAlbergue.mock.mockImplementation(async () => true);
+        repo.formalizarSolicitud.mock.mockImplementation(async () => 1);
+        repo.cancelarSolicitud.mock.mockImplementation(async () => 1);
+        repo.cerrarPrueba.mock.mockImplementation(async () => 1);
+    });
+
+    it('formalizar le avisa que su trámite está activo', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ID_ESTADO_PROCESO: 1, USUARIO_ACTIVO: 'S', FECHA_VENCIMIENTO: FUTURO }));
+        await formalizar(10, {}, STAFF);
+
+        const [documento, tipo, mensaje, idSolicitud] = avisos.notificarAlAdoptante.mock.calls[0].arguments;
+        assert.equal(documento, '2');
+        assert.equal(tipo, 7);
+        assert.match(mensaje, /Luna.*trámite activo/);
+        assert.equal(idSolicitud, 10);
+    });
+
+    it('la entrega le avisa que empezó la prueba', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA }));
+        mascotas.pasarMascotaAPrueba.mock.mockImplementation(async () => true);
+        repo.registrarEntrega.mock.mockImplementation(async () => ({ filas: 1, fechaEntrega: new Date() }));
+        seguimientos.programarCheckpoints.mock.mockImplementation(async () => 3);
+
+        await entregar(10, STAFF);
+        assert.deepEqual(tiposAvisados(), [8]);
+    });
+
+    it('si el staff cancela, le avisa; si cancela el propio adoptante, no', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA }));
+
+        await cancelar(10, { idEstadoProceso: 8, observaciones: 'x' }, STAFF);
+        assert.deepEqual(tiposAvisados(), [11]);
+
+        await cancelar(10, { idEstadoProceso: 7, observaciones: 'x' }, STAFF);
+        assert.equal(avisos.notificarAlAdoptante.mock.callCount(), 1);
+    });
+
+    it('el cierre del periodo de prueba avisa según el resultado', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ID_ESTADO_PROCESO: 3, ESTADO: 'EN_PRUEBA', FECHA_FIN_PRUEBA: PASADO }));
+
+        await cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF);
+        await cerrarPeriodoPrueba(10, { resultado: 'FALLIDO', observaciones: 'Devuelta.' }, STAFF);
+        assert.deepEqual(tiposAvisados(), [10, 11]);
+    });
+
+    it('el vencimiento automático le avisa', async () => {
+        repo.listarVencidas.mock.mockImplementation(async () => [{ ID_SOLICITUD: 1, ID_MASCOTA: 11, DOCUMENTO: '2', MASCOTA: 'Luna' }]);
+        repo.marcarVencida.mock.mockImplementation(async () => 1);
+
+        await vencerSolicitudes();
+        assert.equal(avisos.notificarAlAdoptante.mock.calls[0].arguments[0], '2');
+        assert.deepEqual(tiposAvisados(), [11]);
+    });
+
+    it('si falla el aviso, el cambio igual se hace', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA }));
+        avisos.notificarAlAdoptante.mock.mockImplementation(async () => { throw new Error('boom'); });
+
+        const r = await cancelar(10, { idEstadoProceso: 8, observaciones: 'x' }, STAFF);
+        assert.equal(r.id, 10);
     });
 });

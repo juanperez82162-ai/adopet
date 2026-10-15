@@ -183,3 +183,20 @@ export async function listarNoAtendidos(diasPlazo) {
         return r.rows;
     });
 }
+
+// Checkpoints que el adoptante ya puede responder: adopción EN_PRUEBA, la
+// fecha ya llegó, sigue dentro del plazo y no tienen respuesta.
+export async function listarPendientes(diasPlazo) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `${SELECT_SEGUIMIENTO}
+              WHERE s.ID_ESTADO_PROCESO = 3
+                AND sg.FECHA_RESPUESTA IS NULL
+                AND TRUNC(SYSDATE) >= sg.FECHA_PROGRAMADA
+                AND TRUNC(SYSDATE) <= sg.FECHA_PROGRAMADA + :diasPlazo
+              ORDER BY sg.FECHA_PROGRAMADA, sg.ID_SEGUIMIENTO`,
+            { diasPlazo }
+        );
+        return r.rows;
+    });
+}

@@ -19,7 +19,8 @@ const PRIORIDADES = {
 // Bandeja del staff como equipo: si alguien marca un aviso como leído, queda
 // leído para todos. Al hacer clic se abre la solicitud de la que habla.
 export function Notificaciones() {
-    const { tienePermiso } = useSesion();
+    const { usuario, tienePermiso } = useSesion();
+    const esStaff = usuario?.rol === 'STAFF';
     const navegar = useNavigate();
     const puedeMarcar = tienePermiso(OPCION, 'modificar');
 
@@ -58,9 +59,13 @@ export function Notificaciones() {
         await cargar();
     }
 
-    async function abrirSolicitud(notificacion) {
+    // Adónde lleva el clic: los seguimientos por responder, a su pantalla;
+    // el resto, a la solicitud de la que habla el aviso.
+    async function abrir(notificacion) {
         await leer(notificacion);
-        navegar(`/solicitudes?abrir=${notificacion.idSolicitud}`);
+        navegar(notificacion.tipo === 'CHECKPOINT_DISPONIBLE'
+            ? '/seguimientos'
+            : `/solicitudes?abrir=${notificacion.idSolicitud}`);
     }
 
     async function leerTodas() {
@@ -81,7 +86,9 @@ export function Notificaciones() {
         <section>
             <header className="cabecera-pagina">
                 <h1>Notificaciones</h1>
-                <p className="texto-suave">Avisos que requieren la atención del equipo.</p>
+                <p className="texto-suave">
+                    {esStaff ? 'Avisos que requieren la atención del equipo.' : 'Novedades de tu proceso de adopción.'}
+                </p>
             </header>
 
             {error && <p className="aviso aviso-error">{error}</p>}
@@ -114,8 +121,8 @@ export function Notificaciones() {
                                         <small className="texto-suave">{formatearFecha(n.fechaCreacion)}</small>
                                     </div>
                                     <div className="notificaciones-acciones">
-                                        <button type="button" className="boton boton-pequeno" onClick={() => abrirSolicitud(n)}>
-                                            Ver solicitud
+                                        <button type="button" className="boton boton-pequeno" onClick={() => abrir(n)}>
+                                            {n.tipo === 'CHECKPOINT_DISPONIBLE' ? 'Responder' : 'Ver solicitud'}
                                         </button>
                                         {!n.leida && puedeMarcar && (
                                             <button type="button" className="boton boton-secundario boton-pequeno" onClick={() => leer(n)}>
