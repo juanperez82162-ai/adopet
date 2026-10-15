@@ -20,7 +20,8 @@ import {
     marcarPrincipal,
     listarEstadosElegibles,
     eliminarFoto,
-    cambiarEstadoSiEs
+    cambiarEstadoSiEs,
+    contarResumenMascotas
 } from './mascotas.repository.js';
 import { detectarTipoImagen } from './fotos.tipo.js';
 import { guardarFoto, borrarFoto } from './fotos.almacen.js';
@@ -530,4 +531,16 @@ export async function revertirMascotaAdoptada(idMascota) {
 
 export async function revertirDevolucionDeMascota(idMascota) {
     return (await cambiarEstadoSiEs(idMascota, DISPONIBLE, EN_PRUEBA)) === 1;
+}
+
+// Cifras para el panel de Inicio del staff.
+export async function obtenerResumenMascotas() {
+    const fila = await contarResumenMascotas();
+
+    return {
+        disponibles: fila.DISPONIBLES,
+        enTratamiento: fila.EN_TRATAMIENTO,
+        enProceso: fila.EN_PROCESO,
+        enPrueba: fila.EN_PRUEBA
+    };
 }

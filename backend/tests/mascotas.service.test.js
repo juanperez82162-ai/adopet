@@ -8,7 +8,7 @@ const repo = simular('modules/mascotas/mascotas.repository.js', [
     'listarMascotas', 'buscarPorId', 'insertarMascota', 'actualizarMascota', 'desactivarMascota',
     'reactivarMascota', 'contarFotos', 'listarFotos', 'buscarFoto', 'insertarFoto', 'marcarPrincipal',
     'listarEstadosElegibles',
-    'eliminarFoto', 'cambiarEstadoSiEs'
+    'eliminarFoto', 'cambiarEstadoSiEs', 'contarResumenMascotas'
 ]);
 const almacen = simular('modules/mascotas/fotos.almacen.js', ['guardarFoto', 'borrarFoto']);
 
@@ -16,7 +16,8 @@ const {
     obtenerTodos, obtenerUno, crearMascota, modificarMascota, cambiarActivoMascota,
     subirFoto, obtenerRutaFoto, marcarFotoPrincipal, obtenerEstadosElegibles, eliminarUnaFoto, LIMITE_FOTOS,
     reservarMascotaParaProceso, liberarMascotaDeProceso, pasarMascotaAPrueba, revertirMascotaAProceso,
-    marcarMascotaAdoptada, devolverMascotaAlAlbergue, revertirMascotaAdoptada, revertirDevolucionDeMascota
+    marcarMascotaAdoptada, devolverMascotaAlAlbergue, revertirMascotaAdoptada, revertirDevolucionDeMascota,
+    obtenerResumenMascotas
 } = await import('../src/modules/mascotas/mascotas.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -464,5 +465,19 @@ describe('cierre del periodo de prueba', () => {
         await revertirDevolucionDeMascota(7);
         assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 5, 4]);
         assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[1].arguments, [7, 1, 4]);
+    });
+});
+
+describe('Resumen para el panel del staff', () => {
+    beforeEach(() => reiniciar(repo));
+
+    it('traduce las columnas de Oracle a cifras', async () => {
+        repo.contarResumenMascotas.mock.mockImplementation(async () => (
+            { DISPONIBLES: 4, EN_TRATAMIENTO: 1, EN_PROCESO: 2, EN_PRUEBA: 3 }
+        ));
+
+        assert.deepEqual(await obtenerResumenMascotas(), {
+            disponibles: 4, enTratamiento: 1, enProceso: 2, enPrueba: 3
+        });
     });
 });

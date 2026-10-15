@@ -7,13 +7,15 @@ import { simular, reiniciar } from './apoyo.js';
 
 const repo = simular('modules/seguimientos/seguimientos.repository.js', [
     'programarSeguimientos', 'listarSeguimientos', 'buscarSeguimiento', 'listarInstrumento',
-    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas', 'listarNoAtendidos', 'listarPendientes'
+    'listarSemaforos', 'listarRespuestas', 'guardarRespuestas', 'listarNoAtendidos', 'listarPendientes',
+    'contarResumenSemaforos'
 ]);
 const avisos = simular('modules/notificaciones/notificaciones.service.js', ['notificarAlStaff', 'notificarAlAdoptante']);
 const TIPO = { SEGUIMIENTO_ROJO: 1, CONTACTO_SOLICITADO: 2, CHECKPOINT_NO_ATENDIDO: 3, CHECKPOINT_RESPONDIDO: 6 };
 
 const {
-    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder, alertarCheckpointsNoAtendidos, alertarCheckpointsDisponibles
+    programarCheckpoints, obtenerFormulario, obtenerSeguimientos, obtenerSeguimiento, responder, alertarCheckpointsNoAtendidos, alertarCheckpointsDisponibles,
+    obtenerResumenSemaforos
 } = await import('../src/modules/seguimientos/seguimientos.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -328,5 +330,19 @@ describe('alertarCheckpointsDisponibles', () => {
         avisos.notificarAlAdoptante.mock.mockImplementation(async () => false);
 
         assert.equal(await alertarCheckpointsDisponibles(), 0);
+    });
+});
+
+describe('Resumen para el panel del staff', () => {
+    beforeEach(() => reiniciar(repo));
+
+    it('traduce el conteo por semáforo, con las que aún no responden aparte', async () => {
+        repo.contarResumenSemaforos.mock.mockImplementation(async () => (
+            { VERDES: 2, AMARILLOS: 1, ROJOS: 3, SIN_RESPUESTA: 4 }
+        ));
+
+        assert.deepEqual(await obtenerResumenSemaforos(), {
+            verdes: 2, amarillos: 1, rojos: 3, sinRespuesta: 4
+        });
     });
 });

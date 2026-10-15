@@ -338,3 +338,20 @@ export async function cambiarEstadoSiEs(idMascota, estadoActual, estadoNuevo) {
         return resultado.rowsAffected;
     });
 }
+
+// Cifras del panel del staff: mascotas activas según su estado.
+// IDs fijos de ESTADOS_MASCOTA: 1 DISPONIBLE, 2 EN_TRATAMIENTO, 3 EN_PROCESO, 4 EN_PRUEBA.
+export async function contarResumenMascotas() {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `SELECT COUNT(CASE WHEN ID_ESTADO_MASCOTA = 1 THEN 1 END) AS DISPONIBLES,
+                    COUNT(CASE WHEN ID_ESTADO_MASCOTA = 2 THEN 1 END) AS EN_TRATAMIENTO,
+                    COUNT(CASE WHEN ID_ESTADO_MASCOTA = 3 THEN 1 END) AS EN_PROCESO,
+                    COUNT(CASE WHEN ID_ESTADO_MASCOTA = 4 THEN 1 END) AS EN_PRUEBA
+               FROM MASCOTAS
+              WHERE ACTIVO = 'S'`
+        );
+
+        return r.rows[0];
+    });
+}

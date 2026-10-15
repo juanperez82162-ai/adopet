@@ -200,3 +200,27 @@ export async function listarPendientes(diasPlazo) {
         return r.rows;
     });
 }
+
+// Cifras del panel del staff: semáforo de cada adopción EN_PRUEBA, tomado de su
+// último checkpoint respondido. Si todavía no ha respondido ninguno, cuenta
+// como "sin respuesta". IDs fijos de SEMAFOROS: 1 VERDE, 2 AMARILLO, 3 ROJO.
+export async function contarResumenSemaforos() {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `SELECT COUNT(CASE WHEN u.ID_SEMAFORO = 1 THEN 1 END) AS VERDES,
+                    COUNT(CASE WHEN u.ID_SEMAFORO = 2 THEN 1 END) AS AMARILLOS,
+                    COUNT(CASE WHEN u.ID_SEMAFORO = 3 THEN 1 END) AS ROJOS,
+                    COUNT(CASE WHEN u.ID_SEMAFORO IS NULL THEN 1 END) AS SIN_RESPUESTA
+               FROM SOLICITUDES_ADOPCION s
+               LEFT JOIN (SELECT ID_SOLICITUD, ID_SEMAFORO,
+                                 ROW_NUMBER() OVER (PARTITION BY ID_SOLICITUD
+                                                    ORDER BY FECHA_RESPUESTA DESC, ID_SEGUIMIENTO DESC) AS ORDEN
+                            FROM SEGUIMIENTOS
+                           WHERE FECHA_RESPUESTA IS NOT NULL) u
+                      ON u.ID_SOLICITUD = s.ID_SOLICITUD AND u.ORDEN = 1
+              WHERE s.ID_ESTADO_PROCESO = 3`
+        );
+
+        return r.rows[0];
+    });
+}

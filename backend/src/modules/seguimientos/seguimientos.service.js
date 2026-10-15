@@ -17,7 +17,8 @@ import {
     listarRespuestas,
     guardarRespuestas,
     listarNoAtendidos,
-    listarPendientes
+    listarPendientes,
+    contarResumenSemaforos
 } from './seguimientos.repository.js';
 import { notificarAlStaff, notificarAlAdoptante } from '../notificaciones/notificaciones.service.js';
 import { TIPO } from '../notificaciones/tipos.js';
@@ -342,4 +343,16 @@ export async function alertarCheckpointsDisponibles() {
     }
 
     return nuevas;
+}
+
+// Cifras para el panel de Inicio del staff.
+export async function obtenerResumenSemaforos() {
+    const fila = await contarResumenSemaforos();
+
+    return {
+        verdes: fila.VERDES,
+        amarillos: fila.AMARILLOS,
+        rojos: fila.ROJOS,
+        sinRespuesta: fila.SIN_RESPUESTA
+    };
 }

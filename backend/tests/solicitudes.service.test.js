@@ -9,7 +9,7 @@ const repo = simular('modules/solicitudes/solicitudes.repository.js', [
     'buscarMascotaParaSolicitud', 'buscarOpcionVivienda', 'buscarOpcionTiempo', 'insertarSolicitud',
     'listarSolicitudes', 'buscarSolicitud', 'formalizarSolicitud', 'cancelarSolicitud',
     'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida', 'cerrarPrueba',
-    'listarPorVencer', 'listarPruebasCumplidas'
+    'listarPorVencer', 'listarPruebasCumplidas', 'contarResumenSolicitudes'
 ]);
 const mascotas = simular('modules/mascotas/mascotas.service.js', [
     'reservarMascotaParaProceso', 'liberarMascotaDeProceso', 'pasarMascotaAPrueba', 'revertirMascotaAProceso',
@@ -21,7 +21,8 @@ const avisos = simular('modules/notificaciones/notificaciones.service.js', ['not
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
     obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia,
-    entregar, extender, vencerSolicitudes, cerrarPeriodoPrueba, alertarTramitesPorVencer, alertarPruebasCumplidas, MAXIMO_DIAS_EXTENSION
+    entregar, extender, vencerSolicitudes, cerrarPeriodoPrueba, alertarTramitesPorVencer, alertarPruebasCumplidas, MAXIMO_DIAS_EXTENSION,
+    obtenerResumenSolicitudes
 } =
     await import('../src/modules/solicitudes/solicitudes.service.js');
 
@@ -740,5 +741,19 @@ describe('avisos al adoptante', () => {
 
         const r = await cancelar(10, { idEstadoProceso: 8, observaciones: 'x' }, STAFF);
         assert.equal(r.id, 10);
+    });
+});
+
+describe('Resumen para el panel del staff', () => {
+    beforeEach(() => reiniciar(repo));
+
+    it('trae los trámites en curso y los que vencen pronto, con la ventana de aviso configurada', async () => {
+        repo.contarResumenSolicitudes.mock.mockImplementation(async () => ({ EN_CURSO: 5, POR_VENCER: 2 }));
+
+        const r = await obtenerResumenSolicitudes();
+
+        assert.equal(r.enCurso, 5);
+        assert.equal(r.porVencer, 2);
+        assert.equal(repo.contarResumenSolicitudes.mock.calls[0].arguments[0], r.dias);
     });
 });

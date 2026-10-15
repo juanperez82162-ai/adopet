@@ -27,7 +27,8 @@ import {
     marcarVencida,
     cerrarPrueba,
     listarPorVencer,
-    listarPruebasCumplidas
+    listarPruebasCumplidas,
+    contarResumenSolicitudes
 } from './solicitudes.repository.js';
 import {
     reservarMascotaParaProceso,
@@ -805,4 +806,12 @@ export async function alertarPruebasCumplidas() {
     }
 
     return nuevas;
+}
+
+// Cifras para el panel de Inicio del staff.
+export async function obtenerResumenSolicitudes() {
+    const dias = config.negocio.diasAvisoVencimiento;
+    const fila = await contarResumenSolicitudes(dias);
+
+    return { enCurso: fila.EN_CURSO, porVencer: fila.POR_VENCER, dias };
 }

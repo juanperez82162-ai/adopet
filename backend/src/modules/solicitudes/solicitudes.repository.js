@@ -425,3 +425,19 @@ export async function listarPruebasCumplidas() {
         return r.rows;
     });
 }
+
+// Cifras del panel del staff: trámites formales (estado ACTIVO) y cuántos vencen pronto.
+export async function contarResumenSolicitudes(dias) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `SELECT COUNT(*) AS EN_CURSO,
+                    COUNT(CASE WHEN FECHA_VENCIMIENTO >= SYSDATE
+                                AND FECHA_VENCIMIENTO < SYSDATE + :dias THEN 1 END) AS POR_VENCER
+               FROM SOLICITUDES_ADOPCION
+              WHERE ID_ESTADO_PROCESO = 2`,
+            { dias }
+        );
+
+        return r.rows[0];
+    });
+}
