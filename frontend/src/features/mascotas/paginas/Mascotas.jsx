@@ -1,4 +1,5 @@
 import '../mascotas.css';
+import '../../solicitudes/solicitudes.css';
 import { useEffect, useState } from 'react';
 import { useSesion } from '../../../hooks/useSesion.js';
 import { listarCatalogo } from '../../catalogos/catalogos.api.js';
@@ -10,9 +11,12 @@ import { FichaMascota } from '../componentes/FichaMascota.jsx';
 import { FotoMascota } from '../componentes/FotoMascota.jsx';
 import { EstadoVacio } from '../../../componentes/EstadoVacio.jsx';
 import { IconoLupa, IconoMascota } from '../../../componentes/Iconos.jsx';
+import { CuestionarioCompatibilidad } from '../../solicitudes/componentes/CuestionarioCompatibilidad.jsx';
+import { ConfirmarSolicitud } from '../../solicitudes/componentes/ConfirmarSolicitud.jsx';
 
 // Debe coincidir con OPCIONES_MENU.NOMBRE_OPCION.
 const OPCION = 'MASCOTAS';
+const OPCION_SOLICITUDES = 'SOLICITUDES';
 
 // Catálogo de mascotas. Todos los perfiles con acceso ven las tarjetas y
 // la ficha; el staff además filtra por estado en el albergue y administra.
@@ -24,6 +28,10 @@ export function Mascotas() {
     const puedeCrear = tienePermiso(OPCION, 'crear');
     const puedeModificar = tienePermiso(OPCION, 'modificar');
     const puedeEliminar = tienePermiso(OPCION, 'eliminar');
+
+    // Quien es adoptante y puede crear solicitudes ve "Quiero adoptarla" y
+    // el cuestionario de compatibilidad (opcional). El backend lo exige igual.
+    const puedeSolicitar = usuario?.rol === 'ADOPTANTE' && tienePermiso(OPCION_SOLICITUDES, 'crear');
 
     const [filtros, setFiltros] = useState({ texto: '', idEspecie: '', estado: '' });
     const [textoBusqueda, setTextoBusqueda] = useState('');
@@ -40,6 +48,11 @@ export function Mascotas() {
     // Panel abierto sobre la lista: null = ninguno, o { tipo, mascota }.
     // tipo: 'ficha' | 'nueva' | 'editar' | 'desactivar' | 'reactivar'.
     const [panel, setPanel] = useState(null);
+
+    // Ventanas emergentes de adopción: el cuestionario abierto y/o la
+    // solicitud por confirmar { mascota, cuestionario }.
+    const [cuestionarioAbierto, setCuestionarioAbierto] = useState(false);
+    const [solicitud, setSolicitud] = useState(null);
 
     useEffect(() => {
         let vigente = true;
@@ -142,6 +155,23 @@ export function Mascotas() {
         subirAlInicio();
     }
 
+    // Camino directo: desde el catálogo o la ficha, sin cuestionario.
+    function empezarSolicitud(mascota) {
+        setSolicitud({ mascota, cuestionario: undefined });
+    }
+
+    // Camino por match: la mascota elegida de las recomendadas, con las respuestas.
+    function elegirRecomendada(mascota, cuestionario) {
+        setCuestionarioAbierto(false);
+        setSolicitud({ mascota, cuestionario });
+    }
+
+    function alTerminarSolicitud() {
+        setSolicitud(null);
+        setAviso('Tu solicitud fue enviada. El albergue se pondrá en contacto contigo.');
+        subirAlInicio();
+    }
+
     const hayFiltros = Boolean(filtros.texto || filtros.idEspecie || filtros.estado);
     const panelListo = estados !== null;
 
@@ -155,6 +185,15 @@ export function Mascotas() {
                         : 'Conoce a las mascotas que esperan un hogar.'}
                 </p>
             </header>
+
+            {puedeSolicitar && (
+                <div className="tarjeta solicitudes-banner">
+                    <p>¿No sabes cuál peludito elegir? Haz nuestro cuestionario de compatibilidad y te diremos cuáles encajan mejor contigo.</p>
+                    <button type="button" className="boton" onClick={() => setCuestionarioAbierto(true)}>
+                        Hacer el cuestionario
+                    </button>
+                </div>
+            )}
 
             <form className="tarjeta mascotas-barra" onSubmit={buscar}>
                 <label className="campo">
@@ -198,7 +237,12 @@ export function Mascotas() {
             </form>
 
             {panel?.tipo === 'ficha' && (
-                <FichaMascota key={panel.mascota.id} mascota={panel.mascota} alCerrar={() => setPanel(null)} />
+                <FichaMascota
+                    key={panel.mascota.id}
+                    mascota={panel.mascota}
+                    alCerrar={() => setPanel(null)}
+                    alAdoptar={puedeSolicitar ? empezarSolicitud : undefined}
+                />
             )}
 
             {(panel?.tipo === 'nueva' || panel?.tipo === 'editar') && (
@@ -275,6 +319,11 @@ export function Mascotas() {
                                 <button type="button" className="boton boton-secundario boton-pequeno" onClick={() => abrir('ficha', m)}>
                                     Ver ficha
                                 </button>
+                                {puedeSolicitar && m.esAdoptable && (
+                                    <button type="button" className="boton boton-pequeno" onClick={() => empezarSolicitud(m)}>
+                                        Quiero adoptarla
+                                    </button>
+                                )}
                                 {puedeModificar && (
                                     <>
                                         <button type="button" className="boton boton-secundario boton-pequeno" onClick={() => abrir('editar', m)}>
@@ -298,6 +347,22 @@ export function Mascotas() {
                         </li>
                     ))}
                 </ul>
+            )}
+
+            {cuestionarioAbierto && (
+                <CuestionarioCompatibilidad
+                    alElegir={elegirRecomendada}
+                    alCerrar={() => setCuestionarioAbierto(false)}
+                />
+            )}
+
+            {solicitud && (
+                <ConfirmarSolicitud
+                    mascota={solicitud.mascota}
+                    cuestionario={solicitud.cuestionario}
+                    alTerminar={alTerminarSolicitud}
+                    alCancelar={() => setSolicitud(null)}
+                />
             )}
         </section>
     );

@@ -6,7 +6,7 @@ import { FotoMascota } from './FotoMascota.jsx';
 // Ficha completa de una mascota: todas sus fotos y todos sus datos.
 // El adoptante ve lo mismo que el staff, menos los datos internos del
 // albergue (el backend ya no se los manda).
-export function FichaMascota({ mascota, alCerrar }) {
+export function FichaMascota({ mascota, alCerrar, alAdoptar }) {
     const [carga, setCarga] = useState({ id: null, datos: null, error: '' });
     const [fotoElegida, setFotoElegida] = useState(null);
 
@@ -84,6 +84,9 @@ export function FichaMascota({ mascota, alCerrar }) {
                     )}
                 </dl>
 
+                {alAdoptar && m.esAdoptable && (
+                    <button type="button" className="boton" onClick={() => alAdoptar(m)}>Quiero adoptarla</button>
+                )}{' '}
                 <button type="button" className="boton boton-secundario" onClick={alCerrar}>Cerrar</button>
             </div>
         </article>

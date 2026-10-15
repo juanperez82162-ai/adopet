@@ -46,8 +46,8 @@ export const config = {
     },
 
     negocio: {
-        umbralMatch: Number(process.env.UMBRAL_MATCH),
-        diasProcesoFormal: Number(process.env.DIAS_PROCESO_FORMAL),
-        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT)
+        umbralMatch: Number(process.env.UMBRAL_MATCH || 60),
+        diasProcesoFormal: Number(process.env.DIAS_PROCESO_FORMAL || 15),
+        diasRespuestaCheckpoint: Number(process.env.DIAS_RESPUESTA_CHECKPOINT || 7)
     }
 };
