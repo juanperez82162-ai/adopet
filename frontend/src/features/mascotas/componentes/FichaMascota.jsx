@@ -85,10 +85,12 @@ export function FichaMascota({ mascota, alCerrar, alAdoptar }) {
                     )}
                 </dl>
 
-                {alAdoptar && m.esAdoptable && (
-                    <button type="button" className="boton" onClick={() => alAdoptar(m)}>Quiero adoptarla</button>
-                )}{' '}
-                <button type="button" className="boton boton-secundario" onClick={alCerrar}>Cerrar</button>
+                <div className="mascotas-ficha-botones">
+                    {alAdoptar && m.esAdoptable && (
+                        <button type="button" className="boton" onClick={() => alAdoptar(m)}>Quiero adoptarla</button>
+                    )}
+                    <button type="button" className="boton boton-secundario" onClick={alCerrar}>Cerrar</button>
+                </div>
             </div>
         </article>
     );

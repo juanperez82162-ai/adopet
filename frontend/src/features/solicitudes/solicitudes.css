@@ -109,7 +109,21 @@
 }
 
 .solicitudes-detalle {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.1rem;
     margin-bottom: 1.25rem;
+}
+
+.solicitudes-detalle > .datos-fijos,
+.solicitudes-detalle > .solicitudes-confirmacion {
+    align-self: stretch;
+}
+
+.solicitudes-detalle h3,
+.solicitudes-detalle p {
+    margin: 0;
 }
 
 .solicitudes-detalle-cabecera {
@@ -129,14 +143,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin: 1rem 0;
 }
 
 .solicitudes-confirmacion {
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
-    margin: 1rem 0;
     padding: 1rem;
     border: 2px solid var(--borde);
     border-radius: var(--radio);

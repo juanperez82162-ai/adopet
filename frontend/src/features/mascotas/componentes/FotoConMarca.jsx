@@ -15,11 +15,8 @@ export function FotoConMarca({ mascota, idFoto, clase = '' }) {
             {enTratamiento && (
                 <div className="mascotas-marca" role="note">
                     <span className="mascotas-marca-icono" aria-hidden="true">🐾</span>
-                    <p>
-                        Temporalmente fuera de proceso de adopción por tratamiento.
-                        <br />
-                        ¡Esperamos que pronto esté disponible!
-                    </p>
+                    <p className="mascotas-marca-titulo">Se está recuperando</p>
+                    <p>Muy pronto podrá buscar un hogar</p>
                 </div>
             )}
         </div>
