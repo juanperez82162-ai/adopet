@@ -15,7 +15,7 @@ const almacen = simular('modules/mascotas/fotos.almacen.js', ['guardarFoto', 'bo
 const {
     obtenerTodos, obtenerUno, crearMascota, modificarMascota, cambiarActivoMascota,
     subirFoto, obtenerRutaFoto, marcarFotoPrincipal, obtenerEstadosElegibles, eliminarUnaFoto, LIMITE_FOTOS,
-    reservarMascotaParaProceso, liberarMascotaDeProceso
+    reservarMascotaParaProceso, liberarMascotaDeProceso, pasarMascotaAPrueba, revertirMascotaAProceso
 } = await import('../src/modules/mascotas/mascotas.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -418,5 +418,26 @@ describe('estado EN_PROCESO manejado por solicitudes', () => {
         repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
         assert.equal(await liberarMascotaDeProceso(7), true);
         assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 3, 1]);
+    });
+});
+
+describe('estado EN_PRUEBA manejado por solicitudes', () => {
+    beforeEach(() => reiniciar(repo));
+
+    it('pasar a prueba cambia EN_PROCESO (3) a EN_PRUEBA (4)', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
+        assert.equal(await pasarMascotaAPrueba(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 3, 4]);
+    });
+
+    it('revertir cambia EN_PRUEBA (4) a EN_PROCESO (3)', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
+        assert.equal(await revertirMascotaAProceso(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 4, 3]);
+    });
+
+    it('devuelve false si la mascota no estaba en el estado esperado', async () => {
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 0);
+        assert.equal(await pasarMascotaAPrueba(7), false);
     });
 });

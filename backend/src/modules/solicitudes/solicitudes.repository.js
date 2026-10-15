@@ -278,3 +278,90 @@ export async function cancelarSolicitud(idSolicitud, estadoActual, idEstadoNuevo
         return r.rowsAffected;
     });
 }
+
+// ---- Entrega, plazo y vencimiento ---------------------------------------
+
+// ACTIVO → EN_PRUEBA con la fecha de entrega de ahora. Solo si sigue ACTIVO y
+// el plazo no se ha cumplido. Devuelve { filas, fechaEntrega } (la fecha exacta
+// que quedó guardada, para programar los checkpoints sobre ella).
+export async function registrarEntrega(idSolicitud) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = 3,
+                    FECHA_ENTREGA = SYSDATE
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 2
+                AND FECHA_VENCIMIENTO >= SYSDATE
+             RETURNING FECHA_ENTREGA INTO :fecha`,
+            { idSolicitud, fecha: { dir: oracledb.BIND_OUT, type: oracledb.DATE } },
+            { autoCommit: true }
+        );
+
+        return { filas: r.rowsAffected, fechaEntrega: r.rowsAffected === 1 ? r.outBinds.fecha[0] : null };
+    });
+}
+
+// Deshace una entrega que no se pudo completar (vuelve a ACTIVO).
+export async function revertirEntrega(idSolicitud) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = 2,
+                    FECHA_ENTREGA = NULL
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 3`,
+            { idSolicitud },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}
+
+// Suma días a la fecha de vencimiento de un trámite ACTIVO.
+export async function extenderPlazo(idSolicitud, dias, observaciones) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET FECHA_VENCIMIENTO = FECHA_VENCIMIENTO + :dias,
+                    OBSERVACIONES = :observaciones
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 2`,
+            { idSolicitud, dias, observaciones },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}
+
+// Trámites ACTIVO cuyo plazo ya se cumplió (los toma el job de vencimiento).
+export async function listarVencidas() {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `SELECT ID_SOLICITUD, ID_MASCOTA
+               FROM SOLICITUDES_ADOPCION
+              WHERE ID_ESTADO_PROCESO = 2
+                AND FECHA_VENCIMIENTO < SYSDATE
+              ORDER BY ID_SOLICITUD`
+        );
+        return r.rows;
+    });
+}
+
+// ACTIVO → VENCIDO, solo si sigue ACTIVO y vencida (así un staff que extendió
+// el plazo justo antes no pierde el trámite). Lo cierra el sistema: sin staff.
+export async function marcarVencida(idSolicitud) {
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = 6,
+                    FECHA_RESOLUCION = SYSDATE
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 2
+                AND FECHA_VENCIMIENTO < SYSDATE`,
+            { idSolicitud },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}

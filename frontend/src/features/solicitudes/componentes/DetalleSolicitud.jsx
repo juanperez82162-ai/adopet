@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
 import { FotoMascota } from '../../mascotas/componentes/FotoMascota.jsx';
 import { formatearFecha } from '../../mascotas/mascotas.formatos.js';
-import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud } from '../solicitudes.api.js';
+import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud, entregarMascota, extenderPlazo } from '../solicitudes.api.js';
 import { aSiNo, claseEstadoProceso, etiquetaEstadoProceso, OPCIONES_CANCELACION } from '../solicitudes.formatos.js';
 
 const LARGO_MOTIVO = 500; // SOLICITUDES_ADOPCION.OBSERVACIONES
 
+const ETIQUETA_CONFIRMAR = {
+    formalizar: 'Confirmar formalización',
+    entregar: 'Confirmar entrega',
+    extender: 'Extender plazo',
+    cancelar: 'Confirmar cancelación',
+    retirar: 'Confirmar cancelación'
+};
+
 // Detalle de una solicitud. Si puedeGestionar (staff con permiso de
 // modificar), permite formalizarla o cancelarla mientras esté abierta.
+// En un trámite activo, el staff también registra la entrega o extiende el plazo.
 // Si es esPropia (el adoptante), puede retirar su solicitud mientras no se formalice.
 export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambiar, alCerrar }) {
     const [carga, setCarga] = useState({ id: null, datos: null, error: '' });
-    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar' | 'retirar'
+    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar' | 'retirar' | 'entregar' | 'extender'
     const [motivo, setMotivo] = useState('');
+    const [dias, setDias] = useState('7');
     const [quienCancela, setQuienCancela] = useState('8');
     const [enviando, setEnviando] = useState(false);
     const [error, setError] = useState('');
@@ -42,6 +52,11 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
             return;
         }
 
+        if (accion === 'extender' && !(Number.isInteger(Number(dias)) && Number(dias) >= 1 && Number(dias) <= 365)) {
+            setError('Escribe un número de días entre 1 y 365.');
+            return;
+        }
+
         setEnviando(true);
 
         try {
@@ -49,6 +64,10 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
 
             if (accion === 'formalizar') {
                 actualizada = await formalizarSolicitud(s.id, motivo.trim() || undefined);
+            } else if (accion === 'entregar') {
+                actualizada = await entregarMascota(s.id);
+            } else if (accion === 'extender') {
+                actualizada = await extenderPlazo(s.id, Number(dias));
             } else if (accion === 'retirar') {
                 actualizada = await cancelarMiSolicitud(s.id, motivo.trim() || undefined);
             } else {
@@ -131,6 +150,12 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                     {s.estado === 'SOLICITUD' && (
                         <button type="button" className="boton" onClick={() => elegir('formalizar')}>Formalizar</button>
                     )}
+                    {s.estado === 'ACTIVO' && (
+                        <>
+                            <button type="button" className="boton" onClick={() => elegir('entregar')}>Registrar entrega</button>
+                            <button type="button" className="boton boton-secundario" onClick={() => elegir('extender')}>Extender plazo</button>
+                        </>
+                    )}
                     <button type="button" className="boton boton-peligro" onClick={() => elegir('cancelar')}>Cancelar solicitud</button>
                 </div>
             )}
@@ -151,7 +176,14 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
 
             {accion && (
                 <div className="solicitudes-confirmacion">
-                    {accion === 'retirar' ? (
+                    {accion === 'entregar' ? (
+                        <p>
+                            Confirma que {s.mascota} ya fue entregada. Empieza el <strong>periodo de prueba</strong> y
+                            se programan los seguimientos del día 3, la semana 3 y el mes 3.
+                        </p>
+                    ) : accion === 'extender' ? (
+                        <p>Suma días al plazo del trámite{s.fechaVencimiento ? ` (hoy vence el ${formatearFecha(s.fechaVencimiento)})` : ''}.</p>
+                    ) : accion === 'retirar' ? (
                         <p>
                             Vas a cancelar tu solicitud para adoptar a {s.mascota}. Después no se puede reactivar,
                             pero podrás enviar otra cuando quieras.
@@ -176,10 +208,19 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                         </>
                     )}
 
+                    {accion === 'extender' && (
+                        <label className="campo">
+                            Días a sumar
+                            <input type="number" min="1" max="365" value={dias} onChange={(e) => setDias(e.target.value)} />
+                        </label>
+                    )}
+
+                    {accion !== 'entregar' && accion !== 'extender' && (
                     <label className="campo">
                         {accion === 'cancelar' ? 'Motivo' : accion === 'retirar' ? 'Motivo (opcional)' : 'Observaciones (opcional)'}
                         <input type="text" value={motivo} maxLength={LARGO_MOTIVO} onChange={(e) => setMotivo(e.target.value)} />
                     </label>
+                    )}
 
                     <div className="solicitudes-acciones">
                         <button type="button" className="boton boton-secundario" onClick={() => setAccion(null)} disabled={enviando}>
@@ -187,11 +228,11 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                         </button>
                         <button
                             type="button"
-                            className={accion === 'formalizar' ? 'boton' : 'boton boton-peligro'}
+                            className={accion === 'cancelar' || accion === 'retirar' ? 'boton boton-peligro' : 'boton'}
                             onClick={confirmar}
                             disabled={enviando}
                         >
-                            {enviando ? 'Guardando...' : accion === 'formalizar' ? 'Confirmar formalización' : 'Confirmar cancelación'}
+                            {enviando ? 'Guardando...' : ETIQUETA_CONFIRMAR[accion]}
                         </button>
                     </div>
                 </div>

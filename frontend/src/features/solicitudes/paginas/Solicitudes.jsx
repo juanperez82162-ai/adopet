@@ -76,11 +76,14 @@ export function Solicitudes() {
     function alCambiar(actualizada, accion) {
         setSolicitudes((anterior) => anterior.map((s) => (s.id === actualizada.id ? actualizada : s)));
         setElegida(null);
-        setAviso(accion === 'formalizar'
-            ? `La solicitud de ${actualizada.adoptante} pasó a trámite activo.`
-            : accion === 'retirar'
-                ? 'Cancelaste tu solicitud.'
-                : 'La solicitud se canceló.');
+        const avisos = {
+            formalizar: `La solicitud de ${actualizada.adoptante} pasó a trámite activo.`,
+            entregar: `Se registró la entrega de ${actualizada.mascota}. Empezó el periodo de prueba.`,
+            extender: 'Se extendió el plazo del trámite.',
+            retirar: 'Cancelaste tu solicitud.',
+            cancelar: 'La solicitud se canceló.'
+        };
+        setAviso(avisos[accion]);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 

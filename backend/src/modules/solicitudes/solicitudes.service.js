@@ -19,9 +19,20 @@ import {
     listarSolicitudes,
     buscarSolicitud,
     formalizarSolicitud,
-    cancelarSolicitud
+    cancelarSolicitud,
+    registrarEntrega,
+    revertirEntrega,
+    extenderPlazo,
+    listarVencidas,
+    marcarVencida
 } from './solicitudes.repository.js';
-import { reservarMascotaParaProceso, liberarMascotaDeProceso } from '../mascotas/mascotas.service.js';
+import {
+    reservarMascotaParaProceso,
+    liberarMascotaDeProceso,
+    pasarMascotaAPrueba,
+    revertirMascotaAProceso
+} from '../mascotas/mascotas.service.js';
+import { programarCheckpoints } from '../seguimientos/seguimientos.service.js';
 import { PERFIL_VETADO } from '../../utils/perfiles.js';
 import { mejoresCoincidencias, calcularMatch } from './match.js';
 
@@ -536,4 +547,110 @@ export async function cancelarPropia(valorId, cuerpo, usuario) {
     }
 
     return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), false);
+}
+
+// ---- Entrega, extensión de plazo y vencimiento -----------------------------
+
+// Máximo de días que se puede extender el plazo en una sola vez.
+export const MAXIMO_DIAS_EXTENSION = 365;
+
+const BOGOTA = { timeZone: 'America/Bogota' };
+
+// El staff entrega la mascota: el trámite pasa a EN_PRUEBA, la mascota también,
+// y se programan los checkpoints 3-3-3 desde la fecha de entrega. Si algo falla
+// a mitad de camino, se deshace lo anterior para no dejar datos a medias.
+export async function entregar(valorId, usuario) {
+    const fila = await buscarExistente(valorId, usuario);
+    exigirNoSerLaMismaPersona(fila, usuario);
+
+    if (fila.ID_ESTADO_PROCESO !== ACTIVO) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_ACTIVA', 'Solo se puede registrar la entrega de un trámite activo.');
+    }
+
+    if (fila.FECHA_VENCIMIENTO < new Date()) {
+        throw new ErrorNegocio(409, 'PLAZO_VENCIDO',
+            'El plazo del trámite ya se cumplió. Extiéndelo para poder registrar la entrega.');
+    }
+
+    // 1. La mascota pasa de EN_PROCESO a EN_PRUEBA.
+    if (!(await pasarMascotaAPrueba(fila.ID_MASCOTA))) {
+        throw new ErrorNegocio(409, 'MASCOTA_NO_EN_PROCESO',
+            `${fila.MASCOTA} no está en proceso de adopción. Revisa su estado en Mascotas.`);
+    }
+
+    // 2. El trámite pasa a EN_PRUEBA con la fecha de entrega.
+    let entrega;
+
+    try {
+        entrega = await registrarEntrega(fila.ID_SOLICITUD);
+    } catch (err) {
+        await revertirMascotaAProceso(fila.ID_MASCOTA);
+        throw err;
+    }
+
+    if (entrega.filas !== 1) {
+        await revertirMascotaAProceso(fila.ID_MASCOTA);
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_ACTIVA', 'La solicitud cambió de estado o su plazo venció. Actualiza la lista.');
+    }
+
+    // 3. Se programan los checkpoints.
+    try {
+        await programarCheckpoints(fila.ID_SOLICITUD, entrega.fechaEntrega);
+    } catch (err) {
+        await revertirEntrega(fila.ID_SOLICITUD);
+        await revertirMascotaAProceso(fila.ID_MASCOTA);
+        throw err;
+    }
+
+    return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
+}
+
+// Suma días al plazo de un trámite activo y deja constancia en las observaciones.
+export async function extender(valorId, cuerpo, usuario) {
+    const fila = await buscarExistente(valorId, usuario);
+    exigirNoSerLaMismaPersona(fila, usuario);
+
+    const dias = cuerpo.dias;
+
+    if (!Number.isInteger(dias) || dias < 1 || dias > MAXIMO_DIAS_EXTENSION) {
+        lanzarDatosInvalidos({ dias: `Escribe un número de días entre 1 y ${MAXIMO_DIAS_EXTENSION}.` });
+    }
+
+    if (fila.ID_ESTADO_PROCESO !== ACTIVO) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_ACTIVA', 'Solo se puede extender el plazo de un trámite activo.');
+    }
+
+    // Constancia en las observaciones. Si se llenan (máximo 500), se conservan las más recientes.
+    const hoy = new Date().toLocaleDateString('es-CO', BOGOTA);
+    const nota = `Plazo extendido ${dias} ${dias === 1 ? 'día' : 'días'} el ${hoy}.`;
+    const observaciones = [fila.OBSERVACIONES, nota].filter(Boolean).join(' ').slice(-LARGO_MAXIMO_MOTIVO);
+
+    const cambiadas = await extenderPlazo(fila.ID_SOLICITUD, dias, observaciones);
+
+    if (cambiadas !== 1) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_ACTIVA', 'La solicitud cambió de estado. Actualiza la lista.');
+    }
+
+    return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
+}
+
+// Lo ejecuta el job de vencimiento: los trámites activos con el plazo cumplido
+// pasan a VENCIDO y su mascota vuelve a estar disponible. Un error con un
+// trámite no detiene a los demás. Devuelve cuántos venció.
+export async function vencerSolicitudes() {
+    const candidatas = await listarVencidas();
+    let vencidas = 0;
+
+    for (const { ID_SOLICITUD: id, ID_MASCOTA: idMascota } of candidatas) {
+        try {
+            if ((await marcarVencida(id)) === 1) {
+                await liberarMascotaDeProceso(idMascota);
+                vencidas += 1;
+            }
+        } catch (err) {
+            console.error(`No se pudo vencer la solicitud ${id}:`, err.message);
+        }
+    }
+
+    return vencidas;
 }

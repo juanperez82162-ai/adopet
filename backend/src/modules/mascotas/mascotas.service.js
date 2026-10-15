@@ -501,3 +501,13 @@ export async function reservarMascotaParaProceso(idMascota) {
 export async function liberarMascotaDeProceso(idMascota) {
     return (await cambiarEstadoSiEs(idMascota, EN_PROCESO, DISPONIBLE)) === 1;
 }
+
+// EN_PROCESO → EN_PRUEBA (se entregó la mascota y empieza el periodo de prueba).
+export async function pasarMascotaAPrueba(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, EN_PROCESO, EN_PRUEBA)) === 1;
+}
+
+// EN_PRUEBA → EN_PROCESO. Solo para deshacer una entrega que no se pudo completar.
+export async function revertirMascotaAProceso(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, EN_PRUEBA, EN_PROCESO)) === 1;
+}

@@ -53,3 +53,13 @@ export function cancelarSolicitud(id, idEstadoProceso, observaciones) {
 export function cancelarMiSolicitud(id, observaciones) {
     return peticion(`${BASE}/${id}/cancelar-propia`, { metodo: 'PATCH', cuerpo: { observaciones } });
 }
+
+// El staff entrega la mascota: el trámite pasa a "En prueba" y se programan los checkpoints.
+export function entregarMascota(id) {
+    return peticion(`${BASE}/${id}/entregar`, { metodo: 'PATCH' });
+}
+
+// Suma días al plazo de un trámite activo.
+export function extenderPlazo(id, dias) {
+    return peticion(`${BASE}/${id}/extender`, { metodo: 'PATCH', cuerpo: { dias } });
+}

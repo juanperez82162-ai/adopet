@@ -7,13 +7,18 @@ import { simular, reiniciar } from './apoyo.js';
 const repo = simular('modules/solicitudes/solicitudes.repository.js', [
     'listarTiposVivienda', 'listarTiemposDisponibles', 'listarEspecies', 'listarMascotasAdoptables',
     'buscarMascotaParaSolicitud', 'buscarOpcionVivienda', 'buscarOpcionTiempo', 'insertarSolicitud',
-    'listarSolicitudes', 'buscarSolicitud', 'formalizarSolicitud', 'cancelarSolicitud'
+    'listarSolicitudes', 'buscarSolicitud', 'formalizarSolicitud', 'cancelarSolicitud',
+    'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida'
 ]);
-const mascotas = simular('modules/mascotas/mascotas.service.js', ['reservarMascotaParaProceso', 'liberarMascotaDeProceso']);
+const mascotas = simular('modules/mascotas/mascotas.service.js', [
+    'reservarMascotaParaProceso', 'liberarMascotaDeProceso', 'pasarMascotaAPrueba', 'revertirMascotaAProceso'
+]);
+const seguimientos = simular('modules/seguimientos/seguimientos.service.js', ['programarCheckpoints']);
 
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
-    obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia
+    obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia,
+    entregar, extender, vencerSolicitudes, MAXIMO_DIAS_EXTENSION
 } =
     await import('../src/modules/solicitudes/solicitudes.service.js');
 
@@ -38,6 +43,7 @@ const opcionNormal = { ID: 1, NIVEL: 3, ES_OTRO: 'N' };
 beforeEach(() => {
     reiniciar(repo);
     reiniciar(mascotas);
+    reiniciar(seguimientos);
     repo.buscarOpcionVivienda.mock.mockImplementation(async () => opcionNormal);
     repo.buscarOpcionTiempo.mock.mockImplementation(async () => ({ ID: 3, NIVEL: 3, ES_OTRO: 'N' }));
 });
@@ -395,5 +401,150 @@ describe('cancelarPropia (el adoptante retira su solicitud)', () => {
     it('409 si cambió de estado mientras tanto', async () => {
         repo.cancelarSolicitud.mock.mockImplementation(async () => 0);
         await rechazaCon(cancelarPropia(10, {}, ADOPTANTE), 409, 'SOLICITUD_NO_CANCELABLE');
+    });
+});
+
+const FUTURO = new Date(Date.now() + 5 * 24 * 3600 * 1000);
+const PASADO = new Date(Date.now() - 24 * 3600 * 1000);
+const ACTIVA = { ID_ESTADO_PROCESO: 2, ESTADO: 'ACTIVO', FECHA_VENCIMIENTO: FUTURO };
+
+describe('entregar', () => {
+    const ENTREGA = new Date('2026-10-15T10:00:00');
+
+    beforeEach(() => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud(ACTIVA));
+        mascotas.pasarMascotaAPrueba.mock.mockImplementation(async () => true);
+        mascotas.revertirMascotaAProceso.mock.mockImplementation(async () => true);
+        repo.registrarEntrega.mock.mockImplementation(async () => ({ filas: 1, fechaEntrega: ENTREGA }));
+        repo.revertirEntrega.mock.mockImplementation(async () => 1);
+        seguimientos.programarCheckpoints.mock.mockImplementation(async () => 3);
+    });
+
+    it('pasa la mascota y el trámite a prueba y programa los checkpoints', async () => {
+        await entregar(10, STAFF);
+
+        assert.equal(mascotas.pasarMascotaAPrueba.mock.calls[0].arguments[0], 1);
+        assert.equal(repo.registrarEntrega.mock.calls[0].arguments[0], 10);
+        assert.deepEqual(seguimientos.programarCheckpoints.mock.calls[0].arguments, [10, ENTREGA]);
+        assert.equal(repo.revertirEntrega.mock.callCount(), 0);
+    });
+
+    it('solo se entrega un trámite activo', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud());
+        await rechazaCon(entregar(10, STAFF), 409, 'SOLICITUD_NO_ACTIVA');
+        assert.equal(mascotas.pasarMascotaAPrueba.mock.callCount(), 0);
+    });
+
+    it('no deja entregar con el plazo vencido', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA, FECHA_VENCIMIENTO: PASADO }));
+        await rechazaCon(entregar(10, STAFF), 409, 'PLAZO_VENCIDO');
+    });
+
+    it('no deja entregar la propia solicitud', async () => {
+        await rechazaCon(entregar(10, { documento: '2', rol: 'STAFF' }), 403, 'SOLICITUD_PROPIA');
+    });
+
+    it('si la mascota no estaba en proceso, no toca el trámite', async () => {
+        mascotas.pasarMascotaAPrueba.mock.mockImplementation(async () => false);
+        await rechazaCon(entregar(10, STAFF), 409, 'MASCOTA_NO_EN_PROCESO');
+        assert.equal(repo.registrarEntrega.mock.callCount(), 0);
+    });
+
+    it('si el trámite cambió mientras tanto, devuelve la mascota a proceso', async () => {
+        repo.registrarEntrega.mock.mockImplementation(async () => ({ filas: 0, fechaEntrega: null }));
+        await rechazaCon(entregar(10, STAFF), 409, 'SOLICITUD_NO_ACTIVA');
+        assert.equal(mascotas.revertirMascotaAProceso.mock.callCount(), 1);
+        assert.equal(seguimientos.programarCheckpoints.mock.callCount(), 0);
+    });
+
+    it('si falla programar los checkpoints, deshace la entrega completa', async () => {
+        seguimientos.programarCheckpoints.mock.mockImplementation(async () => { throw new Error('boom'); });
+
+        await assert.rejects(entregar(10, STAFF), /boom/);
+        assert.equal(repo.revertirEntrega.mock.callCount(), 1);
+        assert.equal(mascotas.revertirMascotaAProceso.mock.callCount(), 1);
+    });
+});
+
+describe('extender', () => {
+    beforeEach(() => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA, OBSERVACIONES: 'Nota previa.' }));
+        repo.extenderPlazo.mock.mockImplementation(async () => 1);
+    });
+
+    it('suma los días y deja constancia sin perder las observaciones', async () => {
+        await extender(10, { dias: 7 }, STAFF);
+
+        const [id, dias, observaciones] = repo.extenderPlazo.mock.calls[0].arguments;
+        assert.equal(id, 10);
+        assert.equal(dias, 7);
+        assert.match(observaciones, /^Nota previa\. Plazo extendido 7 días el /);
+    });
+
+    it('valida los días', async () => {
+        for (const dias of [0, -3, 1.5, '7', undefined, MAXIMO_DIAS_EXTENSION + 1]) {
+            await rechazaCon(extender(10, { dias }, STAFF), 400, 'DATOS_INVALIDOS');
+        }
+    });
+
+    it('solo extiende un trámite activo', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud());
+        await rechazaCon(extender(10, { dias: 5 }, STAFF), 409, 'SOLICITUD_NO_ACTIVA');
+    });
+
+    it('las observaciones nunca pasan de 500 caracteres', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...ACTIVA, OBSERVACIONES: 'x'.repeat(495) }));
+        await extender(10, { dias: 5 }, STAFF);
+        assert.ok(repo.extenderPlazo.mock.calls[0].arguments[2].length <= 500);
+    });
+});
+
+describe('vencerSolicitudes (job)', () => {
+    it('vence cada trámite y libera su mascota', async () => {
+        repo.listarVencidas.mock.mockImplementation(async () => [
+            { ID_SOLICITUD: 1, ID_MASCOTA: 11 },
+            { ID_SOLICITUD: 2, ID_MASCOTA: 12 }
+        ]);
+        repo.marcarVencida.mock.mockImplementation(async () => 1);
+        mascotas.liberarMascotaDeProceso.mock.mockImplementation(async () => true);
+
+        assert.equal(await vencerSolicitudes(), 2);
+        assert.deepEqual(mascotas.liberarMascotaDeProceso.mock.calls.map((c) => c.arguments[0]), [11, 12]);
+    });
+
+    it('si alguien extendió el plazo justo antes, no la vence ni libera la mascota', async () => {
+        repo.listarVencidas.mock.mockImplementation(async () => [{ ID_SOLICITUD: 1, ID_MASCOTA: 11 }]);
+        repo.marcarVencida.mock.mockImplementation(async () => 0);
+
+        assert.equal(await vencerSolicitudes(), 0);
+        assert.equal(mascotas.liberarMascotaDeProceso.mock.callCount(), 0);
+    });
+
+    it('un error con un trámite no detiene a los demás', async () => {
+        repo.listarVencidas.mock.mockImplementation(async () => [
+            { ID_SOLICITUD: 1, ID_MASCOTA: 11 },
+            { ID_SOLICITUD: 2, ID_MASCOTA: 12 }
+        ]);
+        let llamada = 0;
+        repo.marcarVencida.mock.mockImplementation(async () => {
+            llamada += 1;
+            if (llamada === 1) throw new Error('boom');
+            return 1;
+        });
+        mascotas.liberarMascotaDeProceso.mock.mockImplementation(async () => true);
+
+        const consola = console.error;
+        console.error = () => undefined;
+
+        try {
+            assert.equal(await vencerSolicitudes(), 1);
+        } finally {
+            console.error = consola;
+        }
+    });
+
+    it('sin trámites vencidos no hace nada', async () => {
+        repo.listarVencidas.mock.mockImplementation(async () => []);
+        assert.equal(await vencerSolicitudes(), 0);
     });
 });
