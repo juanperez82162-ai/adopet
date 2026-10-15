@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "crear-admin": "node scripts/crear-admin.js",
+    "sembrar-mascotas": "node scripts/sembrar-mascotas-prueba.js",
     "test": "node --test --experimental-test-module-mocks tests/*.test.js"
   },
   "keywords": [],
