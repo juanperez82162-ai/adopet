@@ -24,13 +24,18 @@ import {
     revertirEntrega,
     extenderPlazo,
     listarVencidas,
-    marcarVencida
+    marcarVencida,
+    cerrarPrueba
 } from './solicitudes.repository.js';
 import {
     reservarMascotaParaProceso,
     liberarMascotaDeProceso,
     pasarMascotaAPrueba,
-    revertirMascotaAProceso
+    revertirMascotaAProceso,
+    marcarMascotaAdoptada,
+    devolverMascotaAlAlbergue,
+    revertirMascotaAdoptada,
+    revertirDevolucionDeMascota
 } from '../mascotas/mascotas.service.js';
 import { programarCheckpoints } from '../seguimientos/seguimientos.service.js';
 import { PERFIL_VETADO } from '../../utils/perfiles.js';
@@ -49,6 +54,9 @@ const ROL_STAFF = 'STAFF';
 // IDs fijos de ESTADOS_PROCESO (sembrados en V2).
 const SOLICITUD = 1;
 const ACTIVO = 2;
+const EN_PRUEBA = 3;
+const FINALIZADO = 4;
+const FALLIDO = 5;
 const CANCELADO_ADOPTANTE = 7;
 const CANCELADO_STAFF = 8;
 const CANCELADO_OTROS = 9;
@@ -327,6 +335,8 @@ function aSolicitud(f, verContacto) {
         fechaEnvio: f.FECHA_ENVIO,
         fechaInicio: f.FECHA_INICIO,
         fechaVencimiento: f.FECHA_VENCIMIENTO,
+        fechaEntrega: f.FECHA_ENTREGA,
+        fechaFinPrueba: f.FECHA_FIN_PRUEBA,
         fechaResolucion: f.FECHA_RESOLUCION,
         observaciones: f.OBSERVACIONES,
         conCuestionario
@@ -653,4 +663,57 @@ export async function vencerSolicitudes() {
     }
 
     return vencidas;
+}
+
+// El staff cierra el periodo de prueba tras revisar los checkpoints.
+//   FINALIZADO: la adopción se confirma (mascota ADOPTADA). Solo cuando el
+//               periodo ya se cumplió; el motivo es opcional.
+//   FALLIDO:    la mascota fue devuelta (vuelve a DISPONIBLE). Puede ocurrir
+//               en cualquier momento de la prueba y exige explicar por qué.
+// Primero se cambia la mascota y, si el trámite no se puede cerrar, se revierte.
+export async function cerrarPeriodoPrueba(valorId, cuerpo, usuario) {
+    const fila = await buscarExistente(valorId, usuario);
+    exigirNoSerLaMismaPersona(fila, usuario);
+
+    const resultado = cuerpo.resultado;
+
+    if (resultado !== 'FINALIZADO' && resultado !== 'FALLIDO') {
+        lanzarDatosInvalidos({ resultado: 'Elige si la adopción se confirma o fracasó.' });
+    }
+
+    const exito = resultado === 'FINALIZADO';
+    const observaciones = leerMotivo(cuerpo, !exito);
+
+    if (fila.ID_ESTADO_PROCESO !== EN_PRUEBA) {
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_EN_PRUEBA', 'Solo se puede cerrar un trámite en periodo de prueba.');
+    }
+
+    if (exito && fila.FECHA_FIN_PRUEBA > new Date()) {
+        throw new ErrorNegocio(409, 'PERIODO_NO_CUMPLIDO',
+            'El periodo de prueba todavía no se cumple. Si la mascota fue devuelta, registra el fracaso.');
+    }
+
+    const cambiarMascota = exito ? marcarMascotaAdoptada : devolverMascotaAlAlbergue;
+    const revertirMascota = exito ? revertirMascotaAdoptada : revertirDevolucionDeMascota;
+
+    if (!(await cambiarMascota(fila.ID_MASCOTA))) {
+        throw new ErrorNegocio(409, 'MASCOTA_NO_EN_PRUEBA',
+            `${fila.MASCOTA} no está en periodo de prueba. Revisa su estado en Mascotas.`);
+    }
+
+    let cambiadas;
+
+    try {
+        cambiadas = await cerrarPrueba(fila.ID_SOLICITUD, exito ? FINALIZADO : FALLIDO, usuario.documento, observaciones);
+    } catch (err) {
+        await revertirMascota(fila.ID_MASCOTA);
+        throw err;
+    }
+
+    if (cambiadas !== 1) {
+        await revertirMascota(fila.ID_MASCOTA);
+        throw new ErrorNegocio(409, 'SOLICITUD_NO_EN_PRUEBA', 'La solicitud cambió de estado. Actualiza la lista.');
+    }
+
+    return aSolicitud(await buscarSolicitud(fila.ID_SOLICITUD), true);
 }

@@ -15,7 +15,8 @@ const almacen = simular('modules/mascotas/fotos.almacen.js', ['guardarFoto', 'bo
 const {
     obtenerTodos, obtenerUno, crearMascota, modificarMascota, cambiarActivoMascota,
     subirFoto, obtenerRutaFoto, marcarFotoPrincipal, obtenerEstadosElegibles, eliminarUnaFoto, LIMITE_FOTOS,
-    reservarMascotaParaProceso, liberarMascotaDeProceso, pasarMascotaAPrueba, revertirMascotaAProceso
+    reservarMascotaParaProceso, liberarMascotaDeProceso, pasarMascotaAPrueba, revertirMascotaAProceso,
+    marcarMascotaAdoptada, devolverMascotaAlAlbergue, revertirMascotaAdoptada, revertirDevolucionDeMascota
 } = await import('../src/modules/mascotas/mascotas.service.js');
 
 const STAFF = { documento: '1', rol: 'STAFF' };
@@ -439,5 +440,29 @@ describe('estado EN_PRUEBA manejado por solicitudes', () => {
     it('devuelve false si la mascota no estaba en el estado esperado', async () => {
         repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 0);
         assert.equal(await pasarMascotaAPrueba(7), false);
+    });
+});
+
+describe('cierre del periodo de prueba', () => {
+    beforeEach(() => {
+        reiniciar(repo);
+        repo.cambiarEstadoSiEs.mock.mockImplementation(async () => 1);
+    });
+
+    it('marcar adoptada cambia EN_PRUEBA (4) a ADOPTADA (5)', async () => {
+        assert.equal(await marcarMascotaAdoptada(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 4, 5]);
+    });
+
+    it('devolver al albergue cambia EN_PRUEBA (4) a DISPONIBLE (1)', async () => {
+        assert.equal(await devolverMascotaAlAlbergue(7), true);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 4, 1]);
+    });
+
+    it('los dos reversos vuelven a EN_PRUEBA (4)', async () => {
+        await revertirMascotaAdoptada(7);
+        await revertirDevolucionDeMascota(7);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[0].arguments, [7, 5, 4]);
+        assert.deepEqual(repo.cambiarEstadoSiEs.mock.calls[1].arguments, [7, 1, 4]);
     });
 });

@@ -63,3 +63,9 @@ export function entregarMascota(id) {
 export function extenderPlazo(id, dias) {
     return peticion(`${BASE}/${id}/extender`, { metodo: 'PATCH', cuerpo: { dias } });
 }
+
+// El staff cierra el periodo de prueba. resultado: 'FINALIZADO' (adopción confirmada)
+// o 'FALLIDO' (la mascota fue devuelta; el motivo es obligatorio).
+export function cerrarPeriodoPrueba(id, resultado, observaciones) {
+    return peticion(`${BASE}/${id}/cerrar-prueba`, { metodo: 'PATCH', cuerpo: { resultado, observaciones } });
+}

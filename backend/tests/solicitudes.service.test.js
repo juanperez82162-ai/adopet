@@ -8,17 +8,18 @@ const repo = simular('modules/solicitudes/solicitudes.repository.js', [
     'listarTiposVivienda', 'listarTiemposDisponibles', 'listarEspecies', 'listarMascotasAdoptables',
     'buscarMascotaParaSolicitud', 'buscarOpcionVivienda', 'buscarOpcionTiempo', 'insertarSolicitud',
     'listarSolicitudes', 'buscarSolicitud', 'formalizarSolicitud', 'cancelarSolicitud',
-    'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida'
+    'registrarEntrega', 'revertirEntrega', 'extenderPlazo', 'listarVencidas', 'marcarVencida', 'cerrarPrueba'
 ]);
 const mascotas = simular('modules/mascotas/mascotas.service.js', [
-    'reservarMascotaParaProceso', 'liberarMascotaDeProceso', 'pasarMascotaAPrueba', 'revertirMascotaAProceso'
+    'reservarMascotaParaProceso', 'liberarMascotaDeProceso', 'pasarMascotaAPrueba', 'revertirMascotaAProceso',
+    'marcarMascotaAdoptada', 'devolverMascotaAlAlbergue', 'revertirMascotaAdoptada', 'revertirDevolucionDeMascota'
 ]);
 const seguimientos = simular('modules/seguimientos/seguimientos.service.js', ['programarCheckpoints']);
 
 const {
     recomendarMascotas, crearSolicitud, obtenerOpcionesCuestionario, CANTIDAD_RECOMENDADAS,
     obtenerSolicitudes, obtenerSolicitud, formalizar, cancelar, cancelarPropia,
-    entregar, extender, vencerSolicitudes, MAXIMO_DIAS_EXTENSION
+    entregar, extender, vencerSolicitudes, cerrarPeriodoPrueba, MAXIMO_DIAS_EXTENSION
 } =
     await import('../src/modules/solicitudes/solicitudes.service.js');
 
@@ -546,5 +547,82 @@ describe('vencerSolicitudes (job)', () => {
     it('sin trámites vencidos no hace nada', async () => {
         repo.listarVencidas.mock.mockImplementation(async () => []);
         assert.equal(await vencerSolicitudes(), 0);
+    });
+});
+
+describe('cerrarPeriodoPrueba', () => {
+    const EN_PRUEBA = { ID_ESTADO_PROCESO: 3, ESTADO: 'EN_PRUEBA', FECHA_FIN_PRUEBA: PASADO };
+
+    beforeEach(() => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud(EN_PRUEBA));
+        mascotas.marcarMascotaAdoptada.mock.mockImplementation(async () => true);
+        mascotas.devolverMascotaAlAlbergue.mock.mockImplementation(async () => true);
+        mascotas.revertirMascotaAdoptada.mock.mockImplementation(async () => true);
+        mascotas.revertirDevolucionDeMascota.mock.mockImplementation(async () => true);
+        repo.cerrarPrueba.mock.mockImplementation(async () => 1);
+    });
+
+    it('confirma la adopción: la mascota queda adoptada y el trámite finalizado', async () => {
+        await cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF);
+
+        assert.equal(mascotas.marcarMascotaAdoptada.mock.calls[0].arguments[0], 1);
+        assert.deepEqual(repo.cerrarPrueba.mock.calls[0].arguments, [10, 4, '1', null]);
+    });
+
+    it('registra el fracaso: la mascota vuelve a estar disponible', async () => {
+        await cerrarPeriodoPrueba(10, { resultado: 'FALLIDO', observaciones: ' Se devolvió. ' }, STAFF);
+
+        assert.equal(mascotas.devolverMascotaAlAlbergue.mock.calls[0].arguments[0], 1);
+        assert.deepEqual(repo.cerrarPrueba.mock.calls[0].arguments, [10, 5, '1', 'Se devolvió.']);
+    });
+
+    it('el fracaso exige el motivo', async () => {
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FALLIDO' }, STAFF), 400, 'DATOS_INVALIDOS');
+    });
+
+    it('el resultado debe ser uno de los dos', async () => {
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'OTRO' }, STAFF), 400, 'DATOS_INVALIDOS');
+    });
+
+    it('no confirma antes de cumplirse el periodo, pero sí permite el fracaso', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud({ ...EN_PRUEBA, FECHA_FIN_PRUEBA: FUTURO }));
+
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), 409, 'PERIODO_NO_CUMPLIDO');
+        assert.equal(mascotas.marcarMascotaAdoptada.mock.callCount(), 0);
+
+        await cerrarPeriodoPrueba(10, { resultado: 'FALLIDO', observaciones: 'Devuelta.' }, STAFF);
+        assert.equal(repo.cerrarPrueba.mock.callCount(), 1);
+    });
+
+    it('solo se cierra un trámite en periodo de prueba', async () => {
+        repo.buscarSolicitud.mock.mockImplementation(async () => filaSolicitud(ACTIVA));
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), 409, 'SOLICITUD_NO_EN_PRUEBA');
+    });
+
+    it('no deja cerrar la propia solicitud', async () => {
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, { documento: '2', rol: 'STAFF' }), 403, 'SOLICITUD_PROPIA');
+    });
+
+    it('si la mascota no estaba en prueba, no toca el trámite', async () => {
+        mascotas.marcarMascotaAdoptada.mock.mockImplementation(async () => false);
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), 409, 'MASCOTA_NO_EN_PRUEBA');
+        assert.equal(repo.cerrarPrueba.mock.callCount(), 0);
+    });
+
+    it('si el trámite cambió mientras tanto, revierte la mascota', async () => {
+        repo.cerrarPrueba.mock.mockImplementation(async () => 0);
+
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), 409, 'SOLICITUD_NO_EN_PRUEBA');
+        assert.equal(mascotas.revertirMascotaAdoptada.mock.callCount(), 1);
+
+        await rechazaCon(cerrarPeriodoPrueba(10, { resultado: 'FALLIDO', observaciones: 'x' }, STAFF), 409, 'SOLICITUD_NO_EN_PRUEBA');
+        assert.equal(mascotas.revertirDevolucionDeMascota.mock.callCount(), 1);
+    });
+
+    it('si falla el guardado, revierte la mascota y propaga el error', async () => {
+        repo.cerrarPrueba.mock.mockImplementation(async () => { throw new Error('boom'); });
+
+        await assert.rejects(cerrarPeriodoPrueba(10, { resultado: 'FINALIZADO' }, STAFF), /boom/);
+        assert.equal(mascotas.revertirMascotaAdoptada.mock.callCount(), 1);
     });
 });

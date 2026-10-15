@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FotoMascota } from '../../mascotas/componentes/FotoMascota.jsx';
 import { formatearFecha } from '../../mascotas/mascotas.formatos.js';
-import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud, entregarMascota, extenderPlazo } from '../solicitudes.api.js';
+import { obtenerSolicitud, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud, entregarMascota, extenderPlazo, cerrarPeriodoPrueba } from '../solicitudes.api.js';
 import { aSiNo, claseEstadoProceso, etiquetaEstadoProceso, OPCIONES_CANCELACION } from '../solicitudes.formatos.js';
 
 const LARGO_MOTIVO = 500; // SOLICITUDES_ADOPCION.OBSERVACIONES
@@ -10,6 +10,8 @@ const ETIQUETA_CONFIRMAR = {
     formalizar: 'Confirmar formalización',
     entregar: 'Confirmar entrega',
     extender: 'Extender plazo',
+    confirmar: 'Confirmar adopción',
+    fracaso: 'Registrar fracaso',
     cancelar: 'Confirmar cancelación',
     retirar: 'Confirmar cancelación'
 };
@@ -20,7 +22,7 @@ const ETIQUETA_CONFIRMAR = {
 // Si es esPropia (el adoptante), puede retirar su solicitud mientras no se formalice.
 export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambiar, alCerrar }) {
     const [carga, setCarga] = useState({ id: null, datos: null, error: '' });
-    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar' | 'retirar' | 'entregar' | 'extender'
+    const [accion, setAccion] = useState(null); // null | 'formalizar' | 'cancelar' | 'retirar' | 'entregar' | 'extender' | 'confirmar' | 'fracaso'
     const [motivo, setMotivo] = useState('');
     const [dias, setDias] = useState('7');
     const [quienCancela, setQuienCancela] = useState('8');
@@ -52,6 +54,11 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
             return;
         }
 
+        if (accion === 'fracaso' && !motivo.trim()) {
+            setError('Escribe por qué la mascota fue devuelta.');
+            return;
+        }
+
         if (accion === 'extender' && !(Number.isInteger(Number(dias)) && Number(dias) >= 1 && Number(dias) <= 365)) {
             setError('Escribe un número de días entre 1 y 365.');
             return;
@@ -68,6 +75,10 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                 actualizada = await entregarMascota(s.id);
             } else if (accion === 'extender') {
                 actualizada = await extenderPlazo(s.id, Number(dias));
+            } else if (accion === 'confirmar') {
+                actualizada = await cerrarPeriodoPrueba(s.id, 'FINALIZADO', motivo.trim() || undefined);
+            } else if (accion === 'fracaso') {
+                actualizada = await cerrarPeriodoPrueba(s.id, 'FALLIDO', motivo.trim());
             } else if (accion === 'retirar') {
                 actualizada = await cancelarMiSolicitud(s.id, motivo.trim() || undefined);
             } else {
@@ -107,6 +118,8 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                 {s.correo && <div><dt>Correo</dt><dd>{s.correo}</dd></div>}
                 {s.fechaInicio && <div><dt>Trámite iniciado</dt><dd>{formatearFecha(s.fechaInicio)}</dd></div>}
                 {s.fechaVencimiento && <div><dt>Vence</dt><dd>{formatearFecha(s.fechaVencimiento)}</dd></div>}
+                {s.fechaEntrega && <div><dt>Entregada</dt><dd>{formatearFecha(s.fechaEntrega)}</dd></div>}
+                {s.estado === 'EN_PRUEBA' && s.fechaFinPrueba && <div><dt>Fin del periodo de prueba</dt><dd>{formatearFecha(s.fechaFinPrueba)}</dd></div>}
                 {s.fechaResolucion && <div><dt>Cerrada</dt><dd>{formatearFecha(s.fechaResolucion)}</dd></div>}
                 {s.observaciones && <div><dt>Observaciones</dt><dd>{s.observaciones}</dd></div>}
             </dl>
@@ -160,6 +173,13 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                 </div>
             )}
 
+            {puedeGestionar && s.estado === 'EN_PRUEBA' && !accion && (
+                <div className="solicitudes-acciones">
+                    <button type="button" className="boton" onClick={() => elegir('confirmar')}>Confirmar adopción</button>
+                    <button type="button" className="boton boton-peligro" onClick={() => elegir('fracaso')}>Registrar fracaso</button>
+                </div>
+            )}
+
             {esPropia && s.estado === 'SOLICITUD' && !accion && (
                 <div className="solicitudes-acciones">
                     <button type="button" className="boton boton-peligro" onClick={() => elegir('retirar')}>
@@ -180,6 +200,16 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                         <p>
                             Confirma que {s.mascota} ya fue entregada. Empieza el <strong>periodo de prueba</strong> y
                             se programan los seguimientos del día 3, la semana 3 y el mes 3.
+                        </p>
+                    ) : accion === 'confirmar' ? (
+                        <p>
+                            Confirma que la adopción de {s.mascota} fue exitosa. {s.mascota} quedará como <strong>adoptada</strong> y
+                            el trámite se cerrará. Revisa antes los seguimientos. Solo se puede cuando termina el periodo de prueba.
+                        </p>
+                    ) : accion === 'fracaso' ? (
+                        <p>
+                            Registra que {s.mascota} fue devuelta al albergue. El trámite se cerrará y {s.mascota} volverá a estar
+                            <strong> disponible</strong>.
                         </p>
                     ) : accion === 'extender' ? (
                         <p>Suma días al plazo del trámite{s.fechaVencimiento ? ` (hoy vence el ${formatearFecha(s.fechaVencimiento)})` : ''}.</p>
@@ -217,7 +247,7 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
 
                     {accion !== 'entregar' && accion !== 'extender' && (
                     <label className="campo">
-                        {accion === 'cancelar' ? 'Motivo' : accion === 'retirar' ? 'Motivo (opcional)' : 'Observaciones (opcional)'}
+                        {accion === 'cancelar' || accion === 'fracaso' ? 'Motivo' : accion === 'retirar' ? 'Motivo (opcional)' : 'Observaciones (opcional)'}
                         <input type="text" value={motivo} maxLength={LARGO_MOTIVO} onChange={(e) => setMotivo(e.target.value)} />
                     </label>
                     )}
@@ -228,7 +258,7 @@ export function DetalleSolicitud({ solicitud, puedeGestionar, esPropia, alCambia
                         </button>
                         <button
                             type="button"
-                            className={accion === 'cancelar' || accion === 'retirar' ? 'boton boton-peligro' : 'boton'}
+                            className={accion === 'cancelar' || accion === 'retirar' || accion === 'fracaso' ? 'boton boton-peligro' : 'boton'}
                             onClick={confirmar}
                             disabled={enviando}
                         >

@@ -4,7 +4,7 @@
 import { Router } from 'express';
 import { autenticar } from '../../middlewares/autenticacion.middleware.js';
 import { autorizar } from '../../middlewares/permisos.middleware.js';
-import { opciones, recomendar, crear, listar, ver, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud, entregarMascota, extenderPlazoSolicitud } from './solicitudes.controller.js';
+import { opciones, recomendar, crear, listar, ver, formalizarSolicitud, cancelarSolicitud, cancelarMiSolicitud, entregarMascota, extenderPlazoSolicitud, cerrarPruebaSolicitud } from './solicitudes.controller.js';
 
 // Debe coincidir con OPCIONES_MENU.NOMBRE_OPCION.
 const OPCION = 'SOLICITUDES';
@@ -37,3 +37,4 @@ solicitudesRoutes.patch('/:id/cancelar-propia', autorizar(OPCION, 'CONSULTAR'), 
 // Entrega y extensión de plazo: modifican el trámite.
 solicitudesRoutes.patch('/:id/entregar', autorizar(OPCION, 'MODIFICAR'), entregarMascota);
 solicitudesRoutes.patch('/:id/extender', autorizar(OPCION, 'MODIFICAR'), extenderPlazoSolicitud);
+solicitudesRoutes.patch('/:id/cerrar-prueba', autorizar(OPCION, 'MODIFICAR'), cerrarPruebaSolicitud);

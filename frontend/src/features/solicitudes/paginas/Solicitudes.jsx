@@ -80,6 +80,8 @@ export function Solicitudes() {
             formalizar: `La solicitud de ${actualizada.adoptante} pasó a trámite activo.`,
             entregar: `Se registró la entrega de ${actualizada.mascota}. Empezó el periodo de prueba.`,
             extender: 'Se extendió el plazo del trámite.',
+            confirmar: `La adopción de ${actualizada.mascota} quedó confirmada.`,
+            fracaso: `Se registró que ${actualizada.mascota} fue devuelta. Ya está disponible de nuevo.`,
             retirar: 'Cancelaste tu solicitud.',
             cancelar: 'La solicitud se canceló.'
         };

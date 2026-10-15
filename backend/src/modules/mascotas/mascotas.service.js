@@ -40,6 +40,7 @@ const DISPONIBLE = 1;
 const EN_TRATAMIENTO = 2;
 const EN_PROCESO = 3;
 const EN_PRUEBA = 4;
+const ADOPTADA = 5;
 
 // El staff solo elige estos dos. Los demás los pone el sistema.
 const ESTADOS_ELEGIBLES = [DISPONIBLE, EN_TRATAMIENTO];
@@ -510,4 +511,23 @@ export async function pasarMascotaAPrueba(idMascota) {
 // EN_PRUEBA → EN_PROCESO. Solo para deshacer una entrega que no se pudo completar.
 export async function revertirMascotaAProceso(idMascota) {
     return (await cambiarEstadoSiEs(idMascota, EN_PRUEBA, EN_PROCESO)) === 1;
+}
+
+// EN_PRUEBA → ADOPTADA (el staff confirmó la adopción).
+export async function marcarMascotaAdoptada(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, EN_PRUEBA, ADOPTADA)) === 1;
+}
+
+// EN_PRUEBA → DISPONIBLE (la mascota volvió al albergue y puede ser adoptada de nuevo).
+export async function devolverMascotaAlAlbergue(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, EN_PRUEBA, DISPONIBLE)) === 1;
+}
+
+// Deshacen un cierre que no se pudo completar (vuelven a EN_PRUEBA).
+export async function revertirMascotaAdoptada(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, ADOPTADA, EN_PRUEBA)) === 1;
+}
+
+export async function revertirDevolucionDeMascota(idMascota) {
+    return (await cambiarEstadoSiEs(idMascota, DISPONIBLE, EN_PRUEBA)) === 1;
 }

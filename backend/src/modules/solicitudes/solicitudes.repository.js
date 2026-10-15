@@ -170,6 +170,8 @@ const SELECT_SOLICITUD = `
            s.FECHA_ENVIO,
            s.FECHA_INICIO,
            s.FECHA_VENCIMIENTO,
+           s.FECHA_ENTREGA,
+           s.FECHA_ENTREGA + (SELECT MAX(DIAS_DESDE_ENTREGA) FROM ETAPAS_SEGUIMIENTO WHERE ACTIVO = 'S') AS FECHA_FIN_PRUEBA,
            s.FECHA_RESOLUCION,
            s.OBSERVACIONES,
            s.ID_TIPO_VIVIENDA,
@@ -360,6 +362,32 @@ export async function marcarVencida(idSolicitud) {
                 AND ID_ESTADO_PROCESO = 2
                 AND FECHA_VENCIMIENTO < SYSDATE`,
             { idSolicitud },
+            { autoCommit: true }
+        );
+        return r.rowsAffected;
+    });
+}
+
+// ---- Cierre del periodo de prueba ---------------------------------------
+
+// EN_PRUEBA → FINALIZADO (4) o FALLIDO (5). Para finalizar, la base vuelve a
+// comprobar que el periodo ya se cumplió (último checkpoint de ETAPAS_SEGUIMIENTO).
+export async function cerrarPrueba(idSolicitud, idEstadoNuevo, documentoStaff, observaciones) {
+    const exigirPeriodo = idEstadoNuevo === 4 ? 'S' : 'N';
+
+    return conConexion(async (conexion) => {
+        const r = await conexion.execute(
+            `UPDATE SOLICITUDES_ADOPCION
+                SET ID_ESTADO_PROCESO = :idEstadoNuevo,
+                    DOCUMENTO_STAFF_CIERRE = :documentoStaff,
+                    FECHA_RESOLUCION = SYSDATE,
+                    OBSERVACIONES = COALESCE(:observaciones, OBSERVACIONES)
+              WHERE ID_SOLICITUD = :idSolicitud
+                AND ID_ESTADO_PROCESO = 3
+                AND (:exigirPeriodo = 'N'
+                     OR SYSDATE >= FECHA_ENTREGA
+                        + (SELECT MAX(DIAS_DESDE_ENTREGA) FROM ETAPAS_SEGUIMIENTO WHERE ACTIVO = 'S'))`,
+            { idSolicitud, idEstadoNuevo, documentoStaff, observaciones, exigirPeriodo },
             { autoCommit: true }
         );
         return r.rowsAffected;

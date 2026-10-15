@@ -12,7 +12,8 @@ import {
     cancelar,
     cancelarPropia,
     entregar,
-    extender
+    extender,
+    cerrarPeriodoPrueba
 } from './solicitudes.service.js';
 
 export async function opciones(req, res) {
@@ -53,4 +54,8 @@ export async function entregarMascota(req, res) {
 
 export async function extenderPlazoSolicitud(req, res) {
     return exito(res, await extender(req.params.id, req.body ?? {}, req.usuario));
+}
+
+export async function cerrarPruebaSolicitud(req, res) {
+    return exito(res, await cerrarPeriodoPrueba(req.params.id, req.body ?? {}, req.usuario));
 }
