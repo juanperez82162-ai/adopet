@@ -12,6 +12,7 @@ import { accesosRoutes } from './modules/accesos/accesos.routes.js';
 import { inicioRoutes } from './modules/inicio/inicio.routes.js';
 import { mascotasRoutes } from './modules/mascotas/mascotas.routes.js';
 import { solicitudesRoutes } from './modules/solicitudes/solicitudes.routes.js';
+import { seguimientosRoutes } from './modules/seguimientos/seguimientos.routes.js';
 
 export const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/accesos', accesosRoutes);
 app.use('/api/inicio', inicioRoutes);
 app.use('/api/mascotas', mascotasRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/seguimientos', seguimientosRoutes);
 
 // El manejador de errores va SIEMPRE al final, después de todas las rutas.
 app.use(manejarErrores);
